@@ -72,6 +72,7 @@ render(<Counter />, document.getElementById('root'));
 回到**最小化更新单位**，其实，如果我们再仔细想一下的话，这里的“最小化更新单位”真的可以就是单个 html 元素，而不是单个 react component，整个应用完全可以不需要一个 react component 就可以。
 
 可以把上面的写成下面这样都是可以的。
+
 ```jsx
 var counter = (
   <div>
