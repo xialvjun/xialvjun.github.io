@@ -13,7 +13,7 @@ title: 响应式 DOM
 
 看下它的使用方式：
 
-```jsx
+```scala
 /** @jsx h */
 import { render } from 'react-dom';
 import { h } from 'react-flyd';
@@ -73,7 +73,7 @@ render(<Counter />, document.getElementById('root'));
 
 可以把上面的写成下面这样都是可以的。
 
-```jsx
+```scala
 var counter = (
   <div>
     <div>

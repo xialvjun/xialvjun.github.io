@@ -1,6 +1,6 @@
 ---
 layout: post
-title: [转载加总结]HTML 性能优化
+title: 【转载加总结】HTML 性能优化
 ---
 
 # 转载原文

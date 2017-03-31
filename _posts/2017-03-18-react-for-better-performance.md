@@ -36,7 +36,7 @@ VDOM 意味着它在更新视图时，需要经历 `生成 VDOM -> diff VDOM -> 
 
 > 这里有点需要注意的是，react 存储 previousProps/previousState 都只是存的引用，而并非深拷贝，所以，如果是通过直接修改，而并非是更换引用的方式（ new_ref = Object.assign({}, old_ref, some_modify) 或 new_ref = {...old_ref, some_modify}）或使用 Immutable.js，则 PureComponent 会导致组件不更新。例如，下面这个例子中，无论怎么点击 modify state 按钮，都只显示 1。
 
-```jsx
+```scala
 class App extends Component {
   constructor(props) {
     super(props);
@@ -69,7 +69,7 @@ class Sub extends PureComponent {
 
 这种说法是有道理的，但仅仅是在代码复用层面。展示组件本身的 propTypes 是固定的，可以尽情拿到别的项目里用。。。但如果是在性能层面，仔细想想会发现这种说法是完全错误的。
 
-```jsx
+```scala
 @connect(...)
 class Container extends Component {
   render() {
