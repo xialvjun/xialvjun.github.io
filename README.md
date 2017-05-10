@@ -1,100 +1,95 @@
-# Lanyon
+# 联系方式（找工作中/Available for hire）
 
-Lanyon is an unassuming [Jekyll](http://jekyllrb.com) theme that places content first by tucking away navigation in a hidden drawer. It's based on [Poole](http://getpoole.com), the Jekyll butler.
+- 手机：170*****528
+- Email：xialvjun@live.com
+- QQ/微信号：1341985539/xialvjun
 
-![Lanyon](https://f.cloud.github.com/assets/98681/1825266/be03f014-71b0-11e3-9539-876e61530e24.png)
-![Lanyon with open sidebar](https://f.cloud.github.com/assets/98681/1825267/be04a914-71b0-11e3-966f-8afe9894c729.png)
-
-
-## Contents
-
-- [Usage](#usage)
-- [Options](#options)
-  - [Sidebar menu](#sidebar-menu)
-  - [Themes](#themes)
-  - [Reverse layout](#reverse-layout)
-- [Development](#development)
-- [Author](#author)
-- [License](#license)
-
-
-## Usage
-
-Lanyon is a theme built on top of [Poole](https://github.com/poole/poole), which provides a fully furnished Jekyll setup—just download and start the Jekyll server. See [the Poole usage guidelines](https://github.com/poole/poole#usage) for how to install and use Jekyll.
-
-
-## Options
-
-Lanyon includes some customizable options, typically applied via classes on the `<body>` element.
-
-
-### Sidebar menu
-
-Create a list of nav links in the sidebar by assigning each Jekyll page the correct layout in the page's [front-matter](http://jekyllrb.com/docs/frontmatter/).
-
-```
 ---
-layout: page
-title: About
+
+# 个人信息
+
+ - 夏吕俊/男/1991
+ - 本科/软件工程/武汉理工大学
+ - 工作年限：4年
+ - 技术博客：[http://xialvjun.github.io](http://xialvjun.github.io)
+ - Github: [http://github.com/xialvjun](http://github.com/xialvjun)
+ - 期望薪资：20k~25k
+ - 现居住城市：北京
+ - 熟悉语言：javascript/go/java/python/sql/html/css
+
 ---
-```
 
-**Why require a specific layout?** Jekyll will return *all* pages, including the `atom.xml`, and with an alphabetical sort order. To ensure the first link is *Home*, we exclude the `index.html` page from this list by specifying the `page` layout.
+# 工作经历
 
+## 北京趣找科技 （ 2016.06 ~ 至今 ）
 
-### Themes
+### 移动 Web 用户端
+[参考视频 https://www.useloom.com/share/56e3d40aad1541688dd3a856d5d20a7d](https://www.useloom.com/share/56e3d40aad1541688dd3a856d5d20a7d)
 
-Lanyon ships with eight optional themes based on the [base16 color scheme](https://github.com/chriskempson/base16). Apply a theme to change the color scheme (mostly applies to sidebar and links).
-
-![Lanyon with red theme](https://f.cloud.github.com/assets/98681/1825270/be065110-71b0-11e3-9ed8-9b8de753a4af.png)
-![Lanyon with red theme and open sidebar](https://f.cloud.github.com/assets/98681/1825269/be05ec20-71b0-11e3-91ea-a9138ef07186.png)
-
-There are eight themes available at this time.
-
-![Available theme classes](https://f.cloud.github.com/assets/98681/1817044/e5b0ec06-6f68-11e3-83d7-acd1942797a1.png)
-
-To use a theme, add any one of the available theme classes to the `<body>` element in the `default.html` layout, like so:
-
-```html
-<body class="theme-base-08">
-  ...
-</body>
-```
-
-To create your own theme, look to the Themes section of [included CSS file](https://github.com/poole/lanyon/blob/master/public/css/lanyon.css). Copy any existing theme (they're only a few lines of CSS), rename it, and change the provided colors.
+### Web 商户端
+[参考视频 https://www.useloom.com/share/91fe03771f0e421499155f4e8038a0a5](https://www.useloom.com/share/91fe03771f0e421499155f4e8038a0a5)
 
 
-### Reverse layout
+## 北京筑梦园科技有限公司 （ 2015.10 ~ 2016.04 ）
 
-![Lanyon with reverse layout](https://f.cloud.github.com/assets/98681/1825265/be03f2e4-71b0-11e3-89f1-360705524495.png)
-![Lanyon with reverse layout and open sidebar](https://f.cloud.github.com/assets/98681/1825268/be056174-71b0-11e3-88c8-5055bca4307f.png)
+### 工作内容
+- 前一个月培训，安排些学习任务，js基础，高级，konckoutjs，react。除了konckoutjs自己没学过，其他自己原本都会。
+- 开始项目智能泊车系统，后端django，前端angular2，半个月自学这两个技术。虽然自己应聘的是web前端工程师，但也不是没后端经验。
+- 在项目中，我的任务是计费模块（前后端，后端抽象逻辑算是整个系统的核心部分）以及前端框架搭建。
 
-Reverse the page orientation with a single class.
-
-```html
-<body class="layout-reverse">
-  ...
-</body>
-```
+### 收获
+感谢同事的帮助与鼓励，让我学会真正的使用linux。也学会了python，虽然不是很熟，不能算真正掌握。
 
 
-## Development
+## 宁波港信息通信有限公司 （ 2013.06 ~ 2015.09 ）
+前端Delphi，后端Java（使用alibaba的dubbo架构），做的一套堆场集装箱管理系统。。。以及维护另一套码头集装箱管理系统，用的是同样的技术，思想历程里有说明。自己主要做前后端业务模块。
 
-Lanyon has two branches, but only one is used for active development.
+---
 
-- `master` for development.  **All pull requests should be to submitted against `master`.**
-- `gh-pages` for our hosted site, which includes our analytics tracking code. **Please avoid using this branch.**
+# 开源项目和作品
+
+## 开源项目
+
+ - [knex-schema-session-store](https://github.com/xialvjun/knex-schema-session-store) : 把数据库中 session 的某些字段抽取出来，拥有单独的列，从而方便检索，例如 user_id。链接：[https://github.com/xialvjun/knex-schema-session-store](https://github.com/xialvjun/knex-schema-session-store)
+ - [koa-lazy-multi-session](https://github.com/xialvjun/koa-lazy-multi-session) : 懒加载 session，减少不必要的数据库请求。链接：[https://github.com/xialvjun/koa-lazy-multi-session](https://github.com/xialvjun/koa-lazy-multi-session)
+ - [rx-domh](http://github.com/xialvjun/rx-domh) : 使用 jsx 直接生成真实 DOM，并把 rxjs 的 Observable 精确绑定到真实 DOM 上去。链接：[http://github.com/xialvjun/rx-domh](http://github.com/xialvjun/rx-domh)
+ - [preact-flyd](http://github.com/xialvjun/preact-flyd) : 把 flyd 的 Stream 绑定到 preact 的 VDOM 上去。链接：[http://github.com/xialvjun/preact-flyd](http://github.com/xialvjun/preact-flyd)
+ - [cache-react-component](http://github.com/xialvjun/cache-react-component) : 缓存要被销毁的 react 组件，提高那个组件再次显示时的速度。链接：[http://github.com/xialvjun/cache-react-component](http://github.com/xialvjun/cache-react-component)
+
+## 技术文章
+
+- [GraphQL schema 设计](http://xialvjun.github.io/2017/03/28/design-graphql-schema/) 链接：[http://xialvjun.github.io/2017/03/28/design-graphql-schema/](http://xialvjun.github.io/2017/03/28/design-graphql-schema/)
+- [响应式 DOM](http://xialvjun.github.io/2017/03/15/rx-domh-reactive-dom/) 链接：[http://xialvjun.github.io/2017/03/15/rx-domh-reactive-dom/](http://xialvjun.github.io/2017/03/15/rx-domh-reactive-dom/)
+
+# 技能清单
+
+### 主要技能
+
+- Node : express/koa/graphql 熟练
+- Go : 还不熟练，但是很清楚它的异步模型
+- React : 精通
+- Java : 熟悉，但已经很久没用了
+- Rust : 了解，也想学想用
+- python : 了解
+
+### 其他技能
+
+webpack、babel、stylus、gulp、mysql、tidb(未来是newsql的)、mongodb、git、bootstrap
+
+# 学习经历
+- 大学以前(09年以前)，成绩都不错，学习挺轻松，但并没有太大的主动性。偶尔玩下游戏，但往往只是尝试下就好，图个新鲜和创意。有一些自己的想法，对 IT 很感兴趣。大学选软件工程专业。
+- 大学期间(09-13年)，发现教的并不是自己想象的一样足够实用(教`C Java SQL`，但没有教具体怎么使用它们做出有实际价值的东西出来)，自已有些自学的想法，但是周边没有人能共同学习，自己又被自学的难度吓到了(自己吓自己)，迷茫很久。直到大三下学期(2012年)周边有其他同学也开始自学，自己才因为喜欢 Win8 而自学 ASP.NET (没在上面标出来是因为当时自学成效并不好，现在也差不多全忘了，而且 ASP.NET 也不流行)。
+- 大四下学期不久，通过校招进入*宁波港信息通信有限公司*实习，半个月 Delphi 上手，开始了模块开发，做一些简单的 CRUD 模块，偶尔也做些 Java 后端业务逻辑开发。两三个月后开始深入业务。说到底，这并非一家 IT 公司。
+- 同年(2013年末)，自己接触到 nodejs，拜读了 **byvoid大神**(也许他不算大神，但我真心感谢他) 的《nodejs开发指南》，然后自己又有一定的 js 的底子，真正进入编程领域。
+- 先后了解并学习`nodejs express mongodb(mongoose) angularjs`。
+- 有种自己是野生程序员的感觉，所以开始学习后端正统 j2ee(14-15年)，`maven spring jpa`，也了解了一些 jpa 替代方案，例如 jooq。期间也接触到 scala，发现与自己的一些想法不谋而合(例如数字是对象，操作符是方法)，一下子被吸引，学习《Scala编程》，极大地打开了编程视界。
+- 15年遇到了 react，自学`react babel webpack`。
+- 15.10-16.4，在筑梦园(见工作经历)，学习了`python django konckoutjs angular2`。真正学会使用 linux，而不是大学时的装个双系统半年不用。同时，自己也抽空学习了`redux react-router`(也就是继续学习 react，自认为技术洞察力还行，可惜当初没能说服筑梦圆使用 react)。
+- 16.6-17.4，自学了很久的 react，终于可以在实际项目中用到了。自己使用 react 全家桶先后做了[客户端](https://www.useloom.com/share/56e3d40aad1541688dd3a856d5d20a7d)与[商户端](https://www.useloom.com/share/91fe03771f0e421499155f4e8038a0a5)，先后也踩了不少坑，看到了各种各样的前端构建模式，对前端构建开始有了自己的理解，开发出了一些开源小玩意。一个缓存 react 组件的小工具 [cache-react-component](https://github.com/xialvjun/cache-react-component)；受到别人的库的启发，开发的一个响应式 VDOM [preact-flyd](https://github.com/xialvjun/preact-flyd)；以及一个真正的**精确数据绑定的响应式真实 DOM** [rx-domh](https://github.com/xialvjun/rx-domh)；也有了自己的[博客](https://xialvjun.github.io/)。
+- 另外，自己业余时间也学了下 Go Rust，深入学习了 GraphQL。
 
 
-## Author
+---
 
-**Mark Otto**
-- <https://github.com/mdo>
-- <https://twitter.com/mdo>
-
-
-## License
-
-Open sourced under the [MIT license](LICENSE.md).
-
-<3
+# 致谢
+感谢您花时间阅读我的简历，期待能有机会和您共事。
