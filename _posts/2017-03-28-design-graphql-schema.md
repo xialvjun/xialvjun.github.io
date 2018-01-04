@@ -45,7 +45,7 @@ type Person {
   age: Int!
   sex: String!
   money: Float!
-  friends: [Person]!
+  friends: [Person!]!
 }
 ```
 
@@ -69,7 +69,7 @@ type Person {
   age: Int!
   sex: String!
   money: Float!
-  friends: [Friend]!
+  friends: [Friend!]!
 }
 ```
 
@@ -90,7 +90,7 @@ type Person {
 
 ```gql
 type Query {
-  person(id: ID!): Person
+  person(id: ID!): Person!
 }
 ```
 
@@ -99,7 +99,7 @@ type Query {
     ```gql
     type Query {
       # 这里不需要客户端传 id，只需要服务端验证客户端的 cookie 或 token
-      me: Person
+      me: Person!
     }
     ```
 
@@ -115,7 +115,7 @@ type Query {
 type Query {
   me: Person
   # of 是一个 person_id
-  friends(of: ID!): [Friend]!
+  friends(of: ID!): [Friend!]!
 }
 ```
 
@@ -134,3 +134,9 @@ type Query {
 这篇文章写到这里其实没有解决任何问题。是用`GraphQL`类型系统去解决权限问题，还是直接在`resolve`方法里判断权限，我没有答案；`root_query`是不是越多越好，还是尽量少些，我也没有答案。。。
 
 这篇文章仅仅是告诉大家在设计`GraphQL`的`schema`时，需要注意的地方罢了。。。
+
+----------------
+
+## 2018-01-04
+
+上面的文章有问到：是糙快猛地在 resolver 里解决一切权限问题，还是基于权限衍生出更复杂的类型？现在想想，还是糙快猛好。。。而且我们完全可以写一些判断权限的装饰器，去包裹那些 resolver，整个编程体验会变得相当舒爽。
