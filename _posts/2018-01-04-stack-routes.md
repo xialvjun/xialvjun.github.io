@@ -110,5 +110,3 @@ render(<BrowserRouter><StackRoutes/></BrowserRouter>, document.querySelector('#r
 ```
 
 *已根据此思路，向 react-router 仓库的 website 包提交了一个包含 example 的 [PullRequest](https://github.com/ReactTraining/react-router/pull/5835)，~~希望被接受吧。~~已经被拒，泪奔 T-T，不过倒也的确像被拒理由里说的那样，作为介绍示例而言太复杂，而且功能特殊，哪怕功能很强大，但也只是适合作为一个工具库存在。*
-
-*近期准备根据此思路写一个方便使用的组件，名字已经想好了：StackSwitch。*
