@@ -46,7 +46,7 @@ ring_aac.setSrc(data_urls.ring_aac);
 ring_aac.play();
 
 // ok
-<audio src="{%{{data_urls.ring_aac}}%}" id="audio_ring_aac"/>
+<audio src="{% raw %}{{data_urls.ring_aac}}{% endraw %}" id="audio_ring_aac"/>
 const ring_aac = wx.createAudioContext('audio_ring_aac');
 ring_aac.play();
 ```
