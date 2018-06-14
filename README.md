@@ -1,4 +1,4 @@
-# 联系方式（找工作中/Available for hire）
+# 联系方式
 
 - 手机：170*****528
 - Email：xialvjun@live.com
