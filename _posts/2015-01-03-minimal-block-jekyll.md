@@ -1,3 +1,11 @@
+---
+layout: post
+title:  "minimal-block - A minimalistic responsive Jekyll theme"
+date:   2015-01-03 00:00:00
+categories: [jekyll, themes]
+tags: omg,shit
+shortUrl: http://goo.gl/JhfZT9
+---
 This theme stared out being a fork from the [Block-log](https://github.com/anandubajith/block-log). It still keeps many similarities. Minimal-block is a minimalistic, responsive and friendly Jekyllrb theme. It has almost no javascript (except for disquss), static social share buttons, rss, paginator, clean and simple permalinks and RSS.
 
 
@@ -70,7 +78,7 @@ You will need to change `name` , `url` , `twitter`, `disqus-id`, `google` and `g
     <tr><td>github</td><td>Your github username.</td></tr>
     <tr><td>google</td><td>Youre google+ username.</td></tr>
     <tr><td>rss-feed-limit</td><td>How much entries to display in the feed.xml (rss).</td></tr>
-    <tr><td>rss-show-full</td><td>The show the full post or to put only the excerpt (yes | no).</td>
+    <tr><td>rss-show-full</td><td>The show the full post or to put only the excerpt (yes | no).</td></tr>
 </tbody>
 </table>
 

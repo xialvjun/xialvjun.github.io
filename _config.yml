@@ -1,27 +1,51 @@
-# Dependencies
-# markdown:         redcarpet
-# redcarpet:
-#     extensions: ["fenced_code_blocks", "hard_wrap", "autolink", "tables", "strikethrough", "superscript", "with_toc_data", "highlight", "prettify", "no_intra_emphasis"]
-# pygments:         true
-# highlighter:      pygments
+#------------------------------------------------------------------------------
+# General
+#------------------------------------------------------------------------------
+name: "云中红瞳的博客"
+description: "多想，多做。未标注文章均为原创，转载请注明出处"
+language: "en"
 
-# Permalinks
-permalink:        pretty
+url: https://xialvjun.github.io
+baseurl: ''
 
-# Setup
-title:            云中红瞳的博客
-tagline:          '想得多，做得少。未标注文章均为原创，转载注明出处'
-description:      '宅男一枚。主营前端，伪全栈，擅长 nodejs、graphql、react。QQ: 1341985539'
-url:              https://xialvjun.github.io
+#------------------------------------------------------------------------------
+# Markdown processor and code highlighting
+#------------------------------------------------------------------------------
+markdown: kramdown
+markdown_ext: "markdown,mkdown,mkdn,mkd,md"
+highlighter: rouge
 
-author:
-  name:           'xialvjun'
-  url:            https://github.com/xialvjun
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
 
-paginate:         5
+#------------------------------------------------------------------------------
+# Pagination and friendly URLs
+#------------------------------------------------------------------------------
+paginate: 2
+paginate_path: /page-:num
+permalink: /:title
 
-# Custom vars
-# version:          2.0.0
+#------------------------------------------------------------------------------
+# Social sharing, comments and RSS.
+#------------------------------------------------------------------------------
+disqus-id: disqus_Trch2LylCx
 
-# github:
-#   repo:           https://github.com/poole/lanyon
+enable-share: true
+twitter: xialvjun
+github: xialvjun
+google: +xialvjun
+
+rss-feed-limit: 10
+rss-show-full: false
+
+#------------------------------------------------------------------------------
+# Configuration, plugins, gems, etc..
+#------------------------------------------------------------------------------
+source: .
+destination: ./_site
+gems: ['jekyll-paginate']
+
+sass:
+    style: :compressed
+    sass_dir: assets/css/
