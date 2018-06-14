@@ -1,130 +1,105 @@
-This theme stared out being a fork from the [Block-log](https://github.com/anandubajith/block-log). It still keeps many similarities. Minimal-block is a minimalistic, responsive and friendly Jekyllrb theme. It has almost no javascript (except for disquss), static social share buttons, rss, paginator, clean and simple permalinks and RSS.
+# 联系方式（找工作中/Available for hire）
 
+- 手机：170*****528
+- Email：xialvjun@live.com
+- QQ/微信号：1341985539/xialvjun
 
-[Live Demo](http://drvy.github.io/minimal-block/)
+---
 
-[Download](https://github.com/drvy/minimal-block/archive/master.zip)
+# 个人信息
 
-[Github Repository](https://github.com/drvy/minimal-block)
+ - 夏吕俊/男/1991
+ - 本科/软件工程/武汉理工大学
+ - 工作年限：5年
+ - 技术博客：[http://xialvjun.github.io](http://xialvjun.github.io)
+ - Github: [http://github.com/xialvjun](http://github.com/xialvjun)
+ - 现居住城市：北京
+ - 熟悉语言：javascript
+ - 熟悉技能：react, graphql(server and client)
 
+---
 
-![minimal-block preview](https://raw.githubusercontent.com/drvy/minimal-block/master/preview.png)
+# 开源项目和作品
 
-Setting up
-----------------
-To start you own blog, simply git clone the repository on github.
+## 开源项目
 
-    git clone https://github.com/drvy/minimal-block.git
+ - ❤️[create-react-style](http://github.com/xialvjun/create-react-style) : 在 react 中渲染 style 标签，通过简单的方式带来 scoped style 功能。链接：[http://github.com/xialvjun/create-react-style](http://github.com/xialvjun/create-react-style)
+ - ❤️[stack-switch](http://github.com/xialvjun/stack-switch) : 通过缓存变化的 location ，给 react-router 带来 keep-alive 功能，从而轻易地让移动端在后退时恢复前进前的状态。链接：[http://github.com/xialvjun/stack-switch](http://github.com/xialvjun/stack-switch)
+ - [rx-domh](http://github.com/xialvjun/rx-domh) : 使用 jsx 直接生成真实 DOM，并把 rxjs 的 Observable 精确绑定到真实 DOM 上去。链接：[http://github.com/xialvjun/rx-domh](http://github.com/xialvjun/rx-domh)
+ - [tiny-graphql-client](http://github.com/xialvjun/tiny-graphql-client) : 抽象出 graphql-client 的通用接口，相当于一个简易版的 apollo-link，而且适用于微信小程序。链接：[http://github.com/xialvjun/tiny-graphql-client](http://github.com/xialvjun/tiny-graphql-client)
+ - [knex-schema-session-store](https://github.com/xialvjun/knex-schema-session-store) : 把数据库中 session 的某些字段抽取出来，拥有单独的列，从而方便检索，例如 user_id。链接：[https://github.com/xialvjun/knex-schema-session-store](https://github.com/xialvjun/knex-schema-session-store)
+ - [koa-lazy-multi-session](https://github.com/xialvjun/koa-lazy-multi-session) : 懒加载 session，减少不必要的数据库请求。链接：[https://github.com/xialvjun/koa-lazy-multi-session](https://github.com/xialvjun/koa-lazy-multi-session)
+ - [preact-flyd](http://github.com/xialvjun/preact-flyd) : 把 flyd 的 Stream 绑定到 preact 的 VDOM 上去。链接：[http://github.com/xialvjun/preact-flyd](http://github.com/xialvjun/preact-flyd)
+ - [cache-react-component](http://github.com/xialvjun/cache-react-component) : 缓存要被销毁的 react 组件，提高那个组件再次显示时的速度。链接：[http://github.com/xialvjun/cache-react-component](http://github.com/xialvjun/cache-react-component)
 
-Once cloned, edit the `_config.yml` file at the root of the repository.
+## 技术文章
 
-To add your own posts, add a file to the _posts directory. The file name has to follow the following structure.
+- [React SSR 总结](http://xialvjun.github.io/react-ssr) 链接：[http://xialvjun.github.io/react-ssr](http://xialvjun.github.io/react-ssr)
+- [栈式路由](http://xialvjun.github.io/stack-routes) 链接：[http://xialvjun.github.io/stack-routes](http://xialvjun.github.io/stack-routes)
+- [响应式 DOM](http://xialvjun.github.io/rx-domh-reactive-dom) 链接：[http://xialvjun.github.io/rx-domh-reactive-dom](http://xialvjun.github.io/rx-domh-reactive-dom)
 
-    year-month-day-title.md
-    2015-01-25-Hello-world.md
+---
 
-The post doesn't have to be writen in markdown but it's recomended. Notice that the URL of the post will contain the “Hello-world” part so the title of the file must be URL friendly.
+# 工作经历
 
+## 小大夫漫画  ( 2017.06 ~ 至今 )
 
-Things to change in `_config.yml`
-----------------
-This file contains the configuration of your blog. By default, it looks like this:
+### Electron 后台
+[参考视频 https://www.useloom.com/share/e5287e7a39564f31b09161ef618b0e6e](https://www.useloom.com/share/e5287e7a39564f31b09161ef618b0e6e)
 
-    # General
-    name: Minimal-Block
-    description: "Minimalistic, friendly, responsive."
-    url: http://localhost:4000
+### WEB 后台
+[参考视频 https://www.useloom.com/share/edd84533cc7d469ab0687d94a344ecc4](https://www.useloom.com/share/edd84533cc7d469ab0687d94a344ecc4)
 
-    markdown: redcarpet
-    highlighter: pygments
+### 微信小程序
+ - 熊猫答 (部分页面 + 前身移动网页)
+ - 谁给你拜年+ (部分页面)
+ - 熊猫课 (内的核心音频播放逻辑)
+ - 熊猫问答 (部分页面)
 
-    paginate: 5
-    permalink: /:title
+## 北京趣找科技 （ 2016.06 ~ 2017.06 ）
 
-    # Social share and comments.
-    disqus-id: yourusername
-    twitter: yourusername
-    github: yourusername
-    google: +yourusername
+### 移动 Web 用户端
+[参考视频 https://www.useloom.com/share/56e3d40aad1541688dd3a856d5d20a7d](https://www.useloom.com/share/56e3d40aad1541688dd3a856d5d20a7d)
 
-    # RSS feed
-    rss-feed-limit: 10
-    rss-show-full: "yes"
+### Web 商户端
+[参考视频 https://www.useloom.com/share/91fe03771f0e421499155f4e8038a0a5](https://www.useloom.com/share/91fe03771f0e421499155f4e8038a0a5)
 
-You will need to change `name` , `url` , `twitter`, `disqus-id`, `google` and `github`. All others are optional. Here is what the variables mean.
+## 北京筑梦园科技有限公司 （ 2015.10 ~ 2016.04 ）
+智能泊车系统（离职时未上线），后端django，前端angular2。我负责计费模块（前后端，后端抽象逻辑算是整个系统的核心部分）以及前端框架搭建。
 
-<table>
-<thead>
-    <tr><th>Name</th><th>Description</th></tr>
-</thead>
-<tbody>
-    <tr><td>name</td><td>The name of your jekyll site. The title.</td></tr>
-    <tr><td>description</td><td>Basic description. Sub-title.</td></tr>
-    <tr><td>url</td><td>Where will be the jekyll site. The main URL without the endind / (slash).</td></tr>
-    <tr><td>markdown</td><td>The preffered markdown parser to use.</td></tr>
-    <tr><td>highlighter</td><td>The syntax-highlighter to use. If not set, `highlights.css` will not be included.</td></tr>
-    <tr><td>paginate</td><td>How much posts to show per page.</td></tr>
-    <tr><td>permalink</td><td>The friendly urls of the post. `none` is the jekyll default.</td></tr>
-    <tr><td>disqus-id</td><td>The disqus ID. If not set, comments will not be shown.</td></tr>
-    <tr><td>twitter</td><td>Your twitter username (used while sharing).</td></tr>
-    <tr><td>github</td><td>Your github username.</td></tr>
-    <tr><td>google</td><td>Youre google+ username.</td></tr>
-    <tr><td>rss-feed-limit</td><td>How much entries to display in the feed.xml (rss).</td></tr>
-    <tr><td>rss-show-full</td><td>The show the full post or to put only the excerpt (yes | no).</td>
-</tbody>
-</table>
+## 宁波港信息通信有限公司 （ 2013.06 ~ 2015.09 ）
+前端Delphi，后端Java（使用alibaba的dubbo架构），做的一套堆场集装箱管理系统。。。以及维护另一套码头集装箱管理系统，用的是同样的技术，思想历程里有说明。自己主要做前后端业务模块。
 
-For more information on Jekyll, visit their [wiki on github](https://github.com/mojombo/jekyll/wiki). For more information on GitHub Pages visit [their site](http://pages.github.com).
+---
 
+# 技能清单
 
-Writing posts.
-----------------
-Checkout the Jekyllrb [wiki](https://github.com/mojombo/jekyll/wiki) for documentation on writing posts. This theme
-makes use of static sharing buttons and they use a few tags that you should include in your posts.
-An example of a post header:
+### 主要技能
 
-    ---
-    layout: post
-    title:  "minimal-block - A minimalistic responsive Jekyll theme"
-    date:   2015-01-25 00:00:00
-    categories: jekyll, themes
-    tags: jekyll, theme, minimal
-    shortUrl: http://goo.gl/JhfZT9
-    ---
+- Node : express/koa/graphql 熟练
+- Go : 还不熟练，但是很清楚它的异步模型
+- React : 精通
+- Java : 熟悉，但已经很久没用了
+- Rust : 了解，也想学想用
+- python : 了解
 
-Most of these variables are just the default ones but the last two (`tags` and `shortUrl`) are used by the theme when sharing via the social buttons in the end of every post.
+### 其他技能
 
-Specifically, `tags` will be converted into hashtags when sharing on Twitter and if you supply a `shortUrl`, it will be used instead of the full url. This is useful if you are using [goo.gl](http://goo.gl) since they provide statistics for each short link and that way you can see how many people are sharing your post.
+webpack、babel、stylus、gulp、mysql、tidb(未来是newsql的)、mongodb、git、bootstrap
 
+# 学习经历
+- 大学以前(09年以前)，成绩都不错，学习挺轻松，但并没有太大的主动性。偶尔玩下游戏，但往往只是尝试下就好，图个新鲜和创意。有一些自己的想法，对 IT 很感兴趣。大学选软件工程专业。
+- 大学期间(09-13年)，发现教的并不是自己想象的一样足够实用(教`C Java SQL`，但没有教具体怎么使用它们做出有实际价值的东西出来)，自已有些自学的想法，但是周边没有人能共同学习，自己又被自学的难度吓到了(自己吓自己)，迷茫很久。直到大三下学期(2012年)周边有其他同学也开始自学，自己才因为喜欢 Win8 而自学 ASP.NET (没在上面标出来是因为当时自学成效并不好，现在也差不多全忘了，而且 ASP.NET 也不流行)。
+- 大四下学期不久，通过校招进入*宁波港信息通信有限公司*实习，半个月 Delphi 上手，开始了模块开发，做一些简单的 CRUD 模块，偶尔也做些 Java 后端业务逻辑开发。两三个月后开始深入业务。说到底，这并非一家 IT 公司。
+- 同年(2013年末)，自己接触到 nodejs，拜读了 **byvoid大神**(也许他不算大神，但我真心感谢他) 的《nodejs开发指南》，然后自己又有一定的 js 的底子，真正进入编程领域。
+- 先后了解并学习`nodejs express mongodb(mongoose) angularjs`。
+- 有种自己是野生程序员的感觉，所以开始学习后端正统 j2ee(14-15年)，`maven spring jpa`，也了解了一些 jpa 替代方案，例如 jooq。期间也接触到 scala，发现与自己的一些想法不谋而合(例如数字是对象，操作符是方法)，一下子被吸引，学习《Scala编程》，极大地打开了编程视界。
+- 15年遇到了 react，自学`react babel webpack`。
+- 15.10-16.4，在筑梦园(见工作经历)，学习了`python django konckoutjs angular2`。真正学会使用 linux，而不是大学时的装个双系统半年不用。同时，自己也抽空学习了`redux react-router`(也就是继续学习 react，自认为技术洞察力还行，可惜当初没能说服筑梦圆使用 react)。
+- 16.6-17.4，自学了很久的 react，终于可以在实际项目中用到了。自己使用 react 全家桶先后做了[客户端](https://www.useloom.com/share/56e3d40aad1541688dd3a856d5d20a7d)与[商户端](https://www.useloom.com/share/91fe03771f0e421499155f4e8038a0a5)，先后也踩了不少坑，看到了各种各样的前端构建模式，对前端构建开始有了自己的理解，开发出了一些开源小玩意。一个缓存 react 组件的小工具 [cache-react-component](https://github.com/xialvjun/cache-react-component)；受到别人的库的启发，开发的一个响应式 VDOM [preact-flyd](https://github.com/xialvjun/preact-flyd)；以及一个真正的**精确数据绑定的响应式真实 DOM** [rx-domh](https://github.com/xialvjun/rx-domh)；也有了自己的[博客](https://xialvjun.github.io/)。
+- 另外，自己业余时间也学了下 Go Rust，深入学习了 GraphQL。
 
-Pages and other files.
-----------------
-Each page has its own directory in the root folder of the theme. In each directory there is an index.html representing the contents of the page. Take a look at the default ones (about and contact) to see the structure.
+---
 
-Another file to know about is the `footer.html` as it has the copyright notice and credits. This file is located in the `_includes` folder. You can remove the credits if you want but I would love you if you give me some credit in the HTML source.
-
-The `404` file is located in the root folder and it contains the exactly same structure as a page.
-
-License
-----------------
-The MIT License (MIT)
-
-    Copyright (c) 2015 Dragomir V Yordanov
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+# 致谢
+感谢您花时间阅读我的简历，期待能有机会和您共事。
