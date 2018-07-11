@@ -94,3 +94,12 @@ react 组件界面控制代码设计:
 
 
 浏览器打印 https://ask.helplib.com/319215 。。。@page 里设置 margin:0 可以隐藏页眉页尾。。。 position:fixed 可以设置每页都显示的内容，用来设置页眉页尾。。。
+
+
+
+1. create-react-style   macro
+2. render-props 的使用 react-powerplug matchMedia ResizeObserver
+3. stack-switch
+4. rx-domh
+5. react 性能。。就 减少使用 render 内的 对象字面量和 inline 函数。。。至于 render-props 会不会影响性能，是当函数运行，还是当组件来创建。。。
+6. taro mpvue 微信小程序 --- react 三点：组件自带状态、jsx、生命周期

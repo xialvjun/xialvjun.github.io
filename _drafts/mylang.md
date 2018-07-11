@@ -28,3 +28,32 @@ api_async(url) = data
 函数调用是运行，参数是参数，函数是函数（这里需要考虑先写参数，后写函数，该如何代码提示）
 其实先写参数，后写函数的写法与 clojure 的 (-> a b c d e) 是一样的，等同于
 e(d(c(b(a)))) ...
+
+
+如果 js 有 Thread:
+```js
+const global_data = new Mutex({
+  data: [1,2,3,4,5,6],
+  mode: 'rw',
+});
+
+const t1 = new Thread(async function() {
+  while (true) {
+    await Promise.delay(100);
+    global_data.lock();
+    global_data.data.push('from sub thread');
+    global_data.unlock();
+  }
+});
+
+t1.run();
+
+(async () => {
+  while (true) {
+    await Promise.delay(100);
+    global_data.lock();
+    global_data.data.push('from sub thread');
+    global_data.unlock();
+  }
+})();
+```
