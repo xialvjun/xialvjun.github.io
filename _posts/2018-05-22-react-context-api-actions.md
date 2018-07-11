@@ -1,6 +1,6 @@
 # Context Api 的正确用法
 
-react 官方文档里只是用 context api 做了跨组件的状态的分享。。。但是没有跨组件的动作分享
+react 官方文档示例里只是用 context api 做了跨组件的状态的分享。。。但是没有跨组件的动作分享。怎么解决呢？动作即状态嘛:
 
 ```ts
 import * as React from "react";

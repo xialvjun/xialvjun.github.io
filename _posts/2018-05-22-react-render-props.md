@@ -51,7 +51,7 @@
   <State>{({state, setState}) => xxx}</State>
   ```
 
-- 把 DOM 自带的状态统一抽象为 react 的状态，从而管理起来
+- 把 DOM 自带的状态统一抽象为 react 的状态，从而方便管理
   - 会写出这样的代码不叫会 react:
   ```jsx
   <State>{({state, setState}) => xxx}</State>
@@ -92,5 +92,52 @@
   </Scrollable>
   ```
   > 的确，可能后面两种 `Hover` 和 `Scrollable` 两个例子太过极端，但会不会是一回事，用不用是另一回事。
+
+- 把 react 的 lifecycle 抽到 jsx 中定义，方便操作
+  - 会写出这样的代码不叫会 react:
+  ```jsx
+  <State>{({state, setState}) => xxx}</State>
+  ```
+  - 会写出这样的代码才叫会 react:
+  ```jsx
+  <Lifecycle
+    props={{ list }}
+    getDerivedStateFromProps={(props, state) => {
+      const plist = props.list,
+            slist = state.list;
+      if (plist.length > slist.length) {
+        return {
+          list: plist.map(pit => 
+            slist.findIndex(sit => sit.id===pit.id) > -1 ?
+              pit :
+              { ...pit, just_insert: true }
+          )
+        }
+      }
+      if (plist.length < slist.length) {
+        return {
+          list: slist.map(sit =>
+            slist.find(pit => sit.id===pit.id) ||
+            { ...sit, just_remove: true }
+          )
+        }
+      }
+      return props;
+    }}
+    componentDidUpdate={(prevProps, prevState, snapshot, instance) => {
+      setTimeout(() => {
+        instance.setState(state => ({ list: state.list.filter(it => !it.just_insert && !it.just_remove) }));
+      }, 300);
+    }}
+  >
+    {state => state.list.map(it => (
+      <div key={it.id} className={`${it.just_insert ? 'inserting' : ''} ${it.just_remove ? 'removing' : ''}`}>
+        content
+      </div>
+    ))}
+  </Lifecycle>
+  ```
+  > 这个 `Lifecycle` 实现了个 css 组动画，当然，也确实是有些复杂，但这种概念本身就代表了 jsx 的无限可能性。
+
 
 一时有感，感慨为什么没能在两年前刚学 react 的时候就能想到这些用法。。。
