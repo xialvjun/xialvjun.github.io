@@ -6,11 +6,13 @@
 - 内容可以不只是文本，也可以是节点:
 
   - 会写出这样的代码不叫会 react:
+
   ```jsx
   <Card head="这是 head"></Card>
   ```
 
   - 会写出这样的代码才叫会 react:
+
   ```jsx
   <Card head={<div className="card head">head</div>}></Card>
   ```
@@ -18,11 +20,13 @@
 - 内容可以不只是节点，也可以是逻辑（把复杂逻辑折叠进 vdom 中，是折叠，既不是隐藏，也不是完全暴露）:
 
   - 会写出这样的代码不叫会 react:
+
   ```jsx
   <Card head={<div className="card head">head</div>}></Card>
   ```
 
   - 会写出这样的代码才叫会 react:
+
   ```jsx
   <Card head={card_meta => (
     card_meta.shouldRenderHead && <div className="card head">head</div>
@@ -32,11 +36,13 @@
 - 初次使用 render props 的时候，有几人意识到自己在用 render props 呢，而它又有多么强大的功能呢？
 
   - 会用 `react-router` 不叫会 react:
+
   ```jsx
   <Route component={SomePage} />
   ```
 
   - 会自己写出才叫会 react:
+
   ```jsx
   <MyComplexLogic>
     {logic => (
@@ -50,11 +56,13 @@
 - 局部状态，轻松解决（状态放进 vdom 中，而不需要单独写个 Component 了，毕竟程序员写 vdom 的成本比写 Component 的成本低得多的多）
 
   - 会写出这样的代码不叫会 react:
+
   ```jsx
   <Consumer>{something => xxx}</Consumer>
   ```
 
   - 会写出这样的代码才叫会 react:
+
   ```jsx
   <State>{({state, setState}) => xxx}</State>
   ```
@@ -62,11 +70,13 @@
 - 把 DOM 自带的状态统一抽象为 react 的状态，从而方便管理
 
   - 会写出这样的代码不叫会 react:
+
   ```jsx
   <State>{({state, setState}) => xxx}</State>
   ```
 
   - 会写出这样的代码才叫会 react:
+
   ```jsx
   <Form>
     {({ values, value, checked }) => (
@@ -79,6 +89,7 @@
   ```
 
   - 会写出这样的代码才叫会 react:
+
   ```jsx
   <Hover>
     {({ hovered, bind }) => (
@@ -94,6 +105,7 @@
   ```
 
   - 会写出这样的代码才叫会 react:
+
   ```jsx
   <Scrollable>
     {({ transform, bind }) => (
@@ -109,11 +121,13 @@
 - 把 react 的 lifecycle 抽到 jsx 中定义，方便操作
 
   - 会写出这样的代码不叫会 react:
+
   ```jsx
   <State>{({state, setState}) => xxx}</State>
   ```
 
   - 会写出这样的代码才叫会 react:
+  
   ```jsx
   <Lifecycle
     props={{ list }}
@@ -152,7 +166,7 @@
     ))}
   </Lifecycle>
   ```
-  
+
   > 这个 `Lifecycle` 实现了个 css 组动画，当然，也确实是有些复杂，但这种概念本身就代表了 jsx 的无限可能性。
 
 
