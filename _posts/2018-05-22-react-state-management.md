@@ -1,3 +1,5 @@
+{% raw %}
+
 # react 状态管理
 
 很早以前，在网上 `render-props` 的概念还没有广泛传播，自己也没有了解到的时候，写了篇文章，[react 组件的可扩展性设计](http://xialvjun.github.io/2017/08/25/extensible-react-components/)，之后不久才知道自己的“高级逻辑扩展组件”被称为 `render-props`。
@@ -69,3 +71,5 @@ ReactDOM.render(APP(), document.querySelector('#root'));
 ---- 
 
 当然，我们也没必要全都是 `state + render_prop`，其他的那些方法也都有各自适宜的场景。上面说了那么多，目的也仅仅是想说明：**我们一直以来可能都低估了 `render_prop` 的作用了。**
+
+{% endraw %}

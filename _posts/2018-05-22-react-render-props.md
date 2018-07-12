@@ -1,3 +1,5 @@
+{% raw %}
+
 # 什么才是学习
 
 人类在原始人的时候就已经会使用火了。可是那不是科学。  
@@ -109,7 +111,7 @@
   ```jsx
   <Scrollable>
     {({ transform, bind }) => (
-      <div style={{ transform }} {...bind}>
+      <div style={\{ transform \}} {...bind}>
         content
       </div>
     )}
@@ -171,3 +173,5 @@
 
 
 一时有感，感慨为什么没能在两年前刚学 react 的时候就能想到这些用法。。。
+
+{% endraw %}
