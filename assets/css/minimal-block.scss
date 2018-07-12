@@ -208,7 +208,7 @@ article {
 
     h1 {
         color: #333;
-        font: 700 1.6em $font-stack;
+        font: 700 1.7em $font-stack;
         margin: 0.5em 0 !important;
     }
 
@@ -295,7 +295,7 @@ blockquote {
     padding: 0.5em 5px;
     quotes: "\201C""\201D""\2018""\2019";
 
-    :before {
+    &:before {
         color: #ccc;
         content: open-quote;
         font-size: 3em;
