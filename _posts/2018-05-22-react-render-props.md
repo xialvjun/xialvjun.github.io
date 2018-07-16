@@ -1,5 +1,3 @@
-{% raw %}
-
 # 什么才是学习
 
 人类在原始人的时候就已经会使用火了。可是那不是科学。  
@@ -96,7 +94,7 @@
   <Hover>
     {({ hovered, bind }) => (
       <div
-        style={{ background: hovered ? '#ccc' : '#fff' }}
+        style={% raw %}{{ background: hovered ? '#ccc' : '#fff' }}{% endraw %}
         onMouseEnter={bind.onMouseEnter}
         onMouseLeave={bind.onMouseLeave}
       >
@@ -132,7 +130,7 @@
   
   ```jsx
   <Lifecycle
-    props={{ list }}
+    props={% raw %}{{ list }}{% endraw %}
     getDerivedStateFromProps={(props, state) => {
       const plist = props.list,
             slist = state.list;
@@ -173,5 +171,3 @@
 
 
 一时有感，感慨为什么没能在两年前刚学 react 的时候就能想到这些用法。。。
-
-{% endraw %}

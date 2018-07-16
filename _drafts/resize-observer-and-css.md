@@ -21,7 +21,6 @@ css 到底比 style 多些什么？
 
 然后 resizeobserver 要获得元素的 size ，需要元素 DidMount ，于是在 ssr 中， ResizeObserver 根本无法给出 size ，整个的根本无法渲染，所以应该给个 defaultSize 
 
-
 ```jsx
 <ResizeObserver defaultSize={{width: 1024}}>
 {contentRect => contentRect.width > 600 ? <div>

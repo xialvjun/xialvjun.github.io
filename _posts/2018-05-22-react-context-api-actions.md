@@ -1,5 +1,3 @@
-{% raw %}
-
 # Context Api 的正确用法
 
 react 官方文档示例里只是用 context api 做了跨组件的状态的分享。。。但是没有跨组件的动作分享。怎么解决呢？动作即状态嘛:
@@ -29,7 +27,7 @@ export class CounterProvider extends React.Component {
     // CounterProvider render 不会引起 this.props.children render，所以没有性能问题 https://github.com/facebook/react/issues/4067#issuecomment-110792425
     // 另外虽然 Provider render 不会引起 children render，但是 children 的生命周期是跟随 Provider 的生命周期的
     return (
-      <Counter.Provider value={{ ...this as any }}>
+      <Counter.Provider value={% raw %}{{ ...this as any }}{% endraw %}>
         {this.props.children}
       </Counter.Provider>
     );
@@ -73,5 +71,3 @@ const App = () => (
 
 render(<App />, document.getElementById("root"));
 ```
-
-{% endraw %}

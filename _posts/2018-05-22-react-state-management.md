@@ -1,5 +1,3 @@
-{% raw %}
-
 # react 状态管理
 
 很早以前，在网上 `render-props` 的概念还没有广泛传播，自己也没有了解到的时候，写了篇文章，[react 组件的可扩展性设计](http://xialvjun.github.io/2017/08/25/extensible-react-components/)，之后不久才知道自己的“高级逻辑扩展组件”被称为 `render-props`。
@@ -15,7 +13,7 @@
 
 `render-props` 多了，就会担心 `render props callback hell` 的问题，找到个 [pedronauck/react-adopt](https://github.com/pedronauck/react-adopt)，另外，后面找到的一个库 [renatorib/react-powerplug](https://github.com/renatorib/react-powerplug) 也可以解决 `render props callback hell` 的问题。不过他们对于有些场景还是不大适用，例如动态数量的 `render-props`，于是自己又撸了个 [xialvjun/react-compose](https://github.com/xialvjun/react-compose)，不过一般来说，当项目需要动态数量的 `render-props` 的时候，大概率算是设计错误了。
 
-之后发现了 [renatorib/react-powerplug](https://github.com/renatorib/react-powerplug)，惊为天人，直接改变了自己对 jsx 的认知，把对 `state` 的定义从 `class extends React.Component` 上，简化到直接在 jsx 上 `<State initial={{ count: 0 }}>{({ state, setState }) => null}</State>`，写一点 jsx 相比写一个 `Component` 对于程序员而言，成本要小太多了。
+之后发现了 [renatorib/react-powerplug](https://github.com/renatorib/react-powerplug)，惊为天人，直接改变了自己对 jsx 的认知，把对 `state` 的定义从 `class extends React.Component` 上，简化到直接在 jsx 上 `<State initial={% raw %}{{ count: 0 }}{% endraw %}>{({ state, setState }) => null}</State>`，写一点 jsx 相比写一个 `Component` 对于程序员而言，成本要小太多了。
 
 然后， react 的状态形式有(这里把动作也当成状态的一种):
 
@@ -71,5 +69,3 @@ ReactDOM.render(APP(), document.querySelector('#root'));
 ---- 
 
 当然，我们也没必要全都是 `state + render_prop`，其他的那些方法也都有各自适宜的场景。上面说了那么多，目的也仅仅是想说明：**我们一直以来可能都低估了 `render_prop` 的作用了。**
-
-{% endraw %}
