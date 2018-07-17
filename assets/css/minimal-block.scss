@@ -198,7 +198,7 @@ nav {
     .module {
         border-bottom: 2px solid #b1b1b1;
         font-size: 0.9em;
-        margin-right: 1em;
+        /* margin-right: 1em; */
     }
 
 }
@@ -558,7 +558,7 @@ div.awesomplete {
         .title { margin-top: 0 !important; }
     }
 
-    .main-header .module { margin-left: 0; }
+    .main-header .module { margin-left: 0; margin-right: 0; }
     .main-content .module { margin-top: 0; }
 
     nav { text-align: center; }
