@@ -109,7 +109,7 @@
   ```jsx
   <Scrollable>
     {({ transform, bind }) => (
-      <div style={\{ transform \}} {...bind}>
+      <div style={% raw %}{{ transform }}{% endraw %} {...bind}>
         content
       </div>
     )}

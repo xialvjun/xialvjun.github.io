@@ -1,5 +1,6 @@
 ## 微信小程序的音频播放 API 测试
 
+{% raw %}
 ```html
 <style type="less">
 </style>
@@ -189,5 +190,6 @@ export default class TestAudio extends wepy.page {
 }
 </script>
 ```
+{% endraw %}
 
 对此，我只想说一句：我屮艸芔茻。
