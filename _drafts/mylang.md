@@ -57,3 +57,25 @@ t1.run();
   }
 })();
 ```
+
+
+
+I am RICH language...数字直接都是分数，甚至是复数
+
+
+module alias + go get/deno
+
+alias.txt
+  github.com/abc/bili: golang.org/x/bili
+  github.com/abc/bili@^0.2.3: golang.org/x/bili@^0.2.3
+
+from "github.com/abc/bili@^1.3.0" import { bili }
+
+alias.txt 中：
+范围小的优先，范围并列的以版本号大的优先（并列是指 <2,>1 与 <1.5,>0.5，有交叉，但互不包含）
+
+from "github.com/abc/bili@^1.3.0" import { bili } 这句在取的时候可能取 1.6.0 版本，然后后续又有代码是 <=1.4.0 ,而 1.4.0 符合 ^1.3.0 ，所以修改上句版本为 1.4.0...
+这样不停的回溯修改依赖，似乎不大好。。。。也许在取 ^1.3.0 的时候，就直接把符合条件的所有版本都下载
+
+重点需要分清依赖是静态依赖还是动态依赖。。。动态依赖就是 node 的 require，连 import 都不是。。。动态依赖则不在乎既取了 1.6.0，又取了 1.4.0
+静态依赖则不应该有副作用，不存在 go 语言的 import (_ "sqlite/driver")....静态依赖要超级容易分析，然后允许经常回溯，对应的编译文件可以设置方案是不在乎依赖体积，允许重复依赖，尽量都取最高版本，还是在乎依赖体积，尽量最小。。。甚至通过 alias 进行更细致的设置
