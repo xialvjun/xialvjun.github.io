@@ -79,3 +79,36 @@ from "github.com/abc/bili@^1.3.0" import { bili } 这句在取的时候可能取
 
 重点需要分清依赖是静态依赖还是动态依赖。。。动态依赖就是 node 的 require，连 import 都不是。。。动态依赖则不在乎既取了 1.6.0，又取了 1.4.0
 静态依赖则不应该有副作用，不存在 go 语言的 import (_ "sqlite/driver")....静态依赖要超级容易分析，然后允许经常回溯，对应的编译文件可以设置方案是不在乎依赖体积，允许重复依赖，尽量都取最高版本，还是在乎依赖体积，尽量最小。。。甚至通过 alias 进行更细致的设置
+
+
+# half float:
+00000 = 0
+00001 = 1
+00010 = 2
+01111 = 1+2+4+8 = 15
+10000 = 
+10001 = -1
+10010 = -2
+11111 = -(1+2+4+8) = -15
+
+11111 = unsigned_value - unsinged_10000 = 15
+11110 = unsigned_value - unsinged_10000 = 14
+10001 = unsigned_value - unsinged_10000 = 1
+10000 = unsigned_value - unsinged_10000 = 0
+01111 = unsigned_value - unsinged_10000 = -1
+01110 = unsigned_value - unsinged_10000 = -2
+00001 = unsigned_value - unsinged_10000 = -15
+00000 = unsigned_value - unsinged_10000 = -16
+
+1 1*5 1*10
+(2-2**(-10))*(10**15)
+1 1*15  infinity
+0 1*15 -infinity
+
+# unsigned int:
+1     => 00000001
+127   => 01111111
+128   => 10000010 00000000  // 这种仅仅加个 1 可能会完全修改数字，还是不好，还是 https://github.com/multiformats/unsigned-varint 的逻辑完善，仅仅大序小序就决定了不少
+255   => 10000001 01111111
+300   => 10000010 00101100
+16384 => 10000001 00000000 00000000
