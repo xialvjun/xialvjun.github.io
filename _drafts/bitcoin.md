@@ -136,7 +136,7 @@ Merkle 树的作用，目前看来仅仅是做交易验证用的，也稍微防�
 
 比特币的 blockheader 中 nonce 占 4 字节，但是显然 10 分钟不可能只计算 hash 仅仅 2**(4*8)=40 亿次，而是每次有新消息新 transaction 进来时，都重新计算 merkle ，让 nonce 重新从 0 开始。。。如果 nonce 计算完，却还是没有新 transaction 进来，就自己主动修改下 coinbase 里的一个时间，从而修改 merkle，重新计算 nonce。。。这样可以的原因是因为计算得到的 hash 本身就被认为是随机的，所以是不是即时修改 merkle 都无所谓的。。。当然，似乎可以把计算`hash(current_blockheader_with_nonce) < current_blockheader_target`，变更为计算`hash(previous_blockheader_hash + nonce) < current_blockheader_target`。。。
 > 不过考虑到如果能避免 51% 攻击，让普通电脑也参与挖矿，但无需完整节点，可以有完整节点接受查询请求以帮助瘦节点验证交易准确性，瘦节点只是挖矿和收集交易，并调用不同的完整节点来验证交易准确性。
-而不能是矿池主机发下任务`get_nonce(previous_blockheader_hash, current_blockheader_target)`，瘦机器得到 nonce 后就直接发给矿池主机。。。因为这样无法控制主机修改 transaction。。。所以，放弃`hash(previous_blockheader_hash + nonce) < current_blockheader_target`的形式
+而不能是矿池主机发下任务`get_nonce(previous_blockheader_hash, current_blockheader_target)`，瘦机器得到 nonce 后就直接发给矿池主机。。。因为这样无法控制主机修改 transaction。。。所以，放弃`hash(previous_blockheader_hash + nonce) < current_blockheader_target`的形式。。。。*这样无法控制主机修改 transaction 是指：挖矿本身是为了结算交易，分布式挖矿是为了让结算更去中心化，自己这台瘦节点凭运气得到的 nonce，让自己有结算交易的资格，让自己这个好人更多参与进来，而不是得到 nonce，把 nonce 给别人，放弃自己的结算资格*
 
 
 新币名字叫 “东方币(THC TouHouCoin)” 东方project(TouHou Project)，象征开源、自由。。。相对 liberty-coin 含蓄一些。。创世区块叫 zun ，东方 project 的创造者，temp 区块叫 xia，东方币的创造者。
@@ -174,3 +174,50 @@ type u_custom 其实程序界有对应的概念，叫 varint ...甚至 var_unsig
 
 
 区块链的形式，以及 Proof of Work 的共识机制，决定了最终当全球所有人都使用 touhou_coin 的时候，本质上只有一台电脑在处理全球所有交易，于是很可能性能会出现问题，大家不得不把手续费给堆高起来，并且设置（手续费+通胀）中矿工获得的比例增加。。。但矿工得到更多的钱也只会促进别人普通的挖矿，去计算那个无用的数字。。。所以，之前说过的 **一套判断区块价值的函数** 是有必要的。必须得把挖矿跟交易结算给绑定起来，同时挖出的区块，结算的交易越多，该区块被承认的可能性越大，从而矿工为了提高挖矿成功率，就得想办法提高区块质量，而不仅仅只是计算那个无用数字，于是，哪怕只是一台电脑，矿工们也会用钱砸出技术出来，使之能够处理更多的交易。
+
+> 分布式挖矿是：区块头里带的是自己这个区块，而不是上一个区块的 hash。。。然后有完整节点愿意提供付费服务，瘦节点接收到交易，会去查询完整节点该交易是否有效，有效就保留下来，继续算区块，查询一次需要付费一次，然后瘦节点还可以定时查询完整节点那里有多少交易，可以下载下来，从而提高自己这个区块的价值，提高其竞争性。
+
+
+
+
+
+
+
+
+
+
+
+-----------
+
+p2p 文件系统，不知道 ipfs 怎么做的。。。自己只想做两个:
+一个是固定的文件，就它的 hash 就是它的 id，用这个 id 可以广播下载此文件；
+另一个是动态的文件（文件夹），主人对文件有修改权限，修改后会带时间戳（其实不是时间戳，而是修改层数）。。。当主人丢失权限秘钥后，其他人可以基于这个动态文件的 id 和 层数，补充新 id + 层数。。。于是普通用户查找旧 id 时，能发现那个文件以及其很久以前的更新，也能找到别人对那个文件的新的更新，自己选择选一个去 subscribe
+
+然后对于这个客户端而言，存储到硬盘的文件都被零碎的缓存化，用户除了通过客户端进行访问外，不能单独访问。。。如果这些缓存被修改，被删除，会被修复。。。用户如果想要传统的文件，需要使用客户端从缓存中下载为传统文件。。。。
+缓存分两种，用户可以选择一部分缓存，进行锁定（仍然是零碎的缓存），另一部分缓存是自动的客户端根据访问频率和硬盘空间限制，自动删除。。。
+还有下载一个动态文件里的部分（下载一个文件夹里的单个文件），这时候把它当固定文件。。。然后客户端本身知道这个固定文件是在一个动态文件内的，就看看这个动态文件之前的版本对应的文件，做出 diff 包，增量下载
+
+于是 zeronet，就是先有一个动态文件（id 为 qwrbhesfq ），并且把秘钥丢掉，然后其他人都在此文件上更新新的文件 (id 为 qwrbhesfq-xxxxxx)，则所有 id 以 qwrbhesfq 开头的文件都是网站，有软件基于这个文件系统客户端做 web 服务器
+
+Peer {
+  pub_key_id
+  direct_peers [
+    pub_key_id
+    connection_stream_sink
+    direct_peers [
+      pub_key_id
+      direct_peers [
+        pub_key_id
+        ....
+      ]
+    ]
+  ]
+  all_peers [
+    pub_key_id
+    path_speeds [
+      path: pub_key_id__pub_key_id__pub_key_id  这里不能形成环，最好也有层数限制
+      speed
+      connection_stream_sink
+    ]
+  ]
+}
