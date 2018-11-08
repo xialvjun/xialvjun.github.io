@@ -120,3 +120,59 @@ from "github.com/abc/bili@^1.3.0" import { bili } 这句在取的时候可能取
 代码里引用包可以只用包名，那么代码所在包就需要有声明依赖文件；也可以代码里直接有依赖的包名和包版本。。。到最后也就是包是没有定义依赖的，而是每句代码的变量都是全名字
 然后自己的项目要编译时，可以有个编译预处理代码，会把一个个文件(可能处理 Item 要更细节些，功能更多些)在处理前先通过一遍预处理代码，相当于在内存中修改了文件，从而可以在自己的项目里提前修复上游项目的 bug，例如上游项目有个依赖无法下载，可以通过预处理代码把代码里的依赖包路径变更为镜像路径
 因为各自的包都可以对自己依赖的包做预处理，所以非常可能会两个包依赖同一个包，但是对那个包做的预处理不一样。。。这样就看两种预处理的结果有哪里不同，如果是代码逻辑不同，那就当成两个包；如果只是依赖不同，就看处理后的依赖是否可兼容，可兼容，就用其中大的那一个（其实只是预备使用大的那一个，也要看其他地方的依赖，最终保证依赖符合规定但又尽量少）。。。可兼容就兼容。。。
+
+模块化要清楚一点，语言本身是没有任何 `use abc` `extern crate abc` 这样的语句的，这些语句都是用于包管理器的，让其替换为 `mod abc {xxx}` 的.
+模块化中，是否允许包 meta 中没有包依赖的其他包信息，而是代码中有这些依赖信息。。。或者说，是否允许代码里有 `use abc@1.2.3::a;` ，如果允许，则必须先下载包，才能知道该包的依赖，但是同一个包的不同版本又可能有不同的依赖，这样就不能统一先知道所有的依赖，再最小化构建。。。如果不允许，则可以有个 .cargo/registry 是个 git 仓库，里面有所有包的元信息，从而计算最小依赖。。。其实允许 `use abc@1.2.3::a;` 这种代码的话，如果 .cargo/registry 里有所有包的所有 item 的元信息的话，一样可以计算最小依赖，甚至是真正的最小依赖（如果 item 的元信息包括 item 本身的大小的话，外部包中没用到的 item 会在构建时去掉）。。。不过需要注意的一点是 `use abc@^1; let a = abc::a; let b = abc::b;` 与 `let a = abc@^1::a; let b = abc@^1::b;` 是有不同的，前者要求两个 `abc` 是同一个，后者无所谓。。。就是类似 `fn abc<T: TraitA>(a: T, b: T)` 与 `fn abc(a: impl TraitA, b: impl TraitA)` 的区别
+
+
+编译器编译程序有三个级别:
+compile -d(--debug): 在 origin 基础上增加 debug 信息
+compile -o(--origin): 代码要求做什么，就只做什么，不多做，也不少做。。。编译器能够稳定递归编译自己，也就是每次编译出来的新的编译器的 hash 值相同。。。从而程序的运行时间是准确可计算的。。。
+compile -r(--release): 编译器根据代码和要求去优化，例如内联函数，比如给 struct 设置默认值，在构建该 struct 对象的时候仅仅做内存拷贝。。。上面两者都是增大 exe 文件大小，但也加快了程序运行速度。。。也可以根据要求反向去做，减小 exe 大小。。。这些都是看要求本身是如何的。。。对这些要求，社区可以提供 preset。。。例如 compile -r net 是指整个程序是互联网应用程序，往这个方向优化。。。另外，还提供一些优化的宏让程序员自主放进代码中，那样那就算是 origin 了。
+
+
+
+rust 不需要 enum，因为可以直接被 mod 替代:
+enum Color {
+  Red
+  Blue
+  RGB(u8, u8, u8)
+}
+Color::Red, Color::Blue;
+替换为
+mod Color {
+  struct Red;
+  struct Blue;
+  struct RGB(u8, u8, u8);
+}
+Color::Red
+这样替换，能够单独 impl Color::Red...准确说是在 Color mod 中 impl Red
+
+fn abc() {
+  // 进入这里的时候，那个 async 段就已经开始执行了，因为 fn abc() async!{}  这里 abc() 就是。。。。不对，都没有执行，因为 abc() 也没有执行 async 段，只有在 poll 的时候才执行
+  // 那么，与 async 类似，gener!  也没有执行，而是返回一个 Generator，在 next 的时候才开始执行
+  async!{
+    await!();
+    xxx
+  }
+  gener!{
+    yield!();
+    xxx
+  }
+}
+
+async fn abc() { await }
+换为
+fn abc() { async!{ await!() } }
+
+包名问题：https://www.reddit.com/r/rust/comments/9adfnq/a_method_to_deal_with_crate_name_reservation_spam/
+然后用户在访问网站时，使用包名访问网站，自动回跳转到 包 id 地址上，再显示包内容，从而，用户收藏和分享的也都是 包 id
+
+
+自动匿名 union 就会自动加 tag，然后 (A | B) | C 等价于 A | B | C.... 所以，哪怕出现前者，也应该先合并再加 tag，而不是 A:11,B:12,A|B:1,C:2 这样的标签。。。也不需要 因为 A 与 B 都有方法 play(), 就让 A | B 能直接调用 play()。。。应该必须让 match A | B 得到真实的类型
+rust 中 enum 的 类型大小是 tag 加上最大的一个类型的大小。。。这里的 union 也一样
+
+
+fn <P>abc<R>(a: P, b: P): R {}
+<P>abc<R>(xx, yy) // <P>abc<R>(xx, yy) 中 <P> 可省略。。。另外，有时函数 abc 的定义中，就不需要 R，因为 R 可以从 P 中得到，那么，调用 abc 时更是什么泛型都不用写
+这个位置的原因是 <P>abc<R> 即 Param -> abc -> Result
