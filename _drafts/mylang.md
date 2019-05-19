@@ -283,3 +283,23 @@ A < A|B
 但是 (a, b, c).some_method() 这种代码又实在太难看懂了，所以，本质问题是在 变量名 上，而不是 对象实例 上...即：
 我们可以 fn abc(data: impl SayHello) { data.say_hello() } 这种代码一点都没有不好懂，因为变量名 data 的类型就是 impl SayHello ...
 但我们不可以 (Person { name: "nnnn" }).say_helo()   也不可以 let p = Person { name: "nnnn" }; p.say_hello();  需要转成 let p = Person { name: "nnnn" }; let s: impl SayHello = p; s.say_hello();
+
+
+1 + 2 让人感觉是 1.+(2) 于是会有想法是不是取属性可以用空格代替，函数调用也用空格代替，于是: a b c d e 这么一串，代表的到底是 a.b(c).d(e) 还是 a(b).c(d).e 还是 a.b(c.d(e)) 还是 a(b.c(d).e) 太多可能性，根本编译不了。。。
+所以，还是 1.+(2) 这样，用点语法取属性。另外因为整个函数参数是一个类型，所以把 (2) 当成一个 tuple，则是 1.+ (2) 。。。
+
+
+有 js 用法: a ? dayjs(a).format(xxx) : null
+这里面，如果 a 是挺长的表达式，例如 get(obj, 'abc.a') ，那就更蛋疼了
+所以，类似 a?.b?.c? 这种语法，如果有 (a? -> dayjs).format(xxx) 这种语法就好了
+
+
+函数参数整个的是 tuple...然后 gui 编程实在需要 可选参数, 命名参数... 所以 tuple 类型之间有包含关系, 命名参数也需要 函数参数可以是 dict 的概念. 这里 dict 并非 Map<K, V> 而是类似 ts 的 Record<keyof xxx, 这里不知道怎么写> 就是不同的字段这里类型是不同的, 更准确的说 dict 类似 struct... 直接匿名 struct 也可以, 于是小 struct 实例往大 struct 上传, 大 struct 上缺少的字段要有默认值, 所以 struct 声明时要可以设置默认值... 
+然后, 因为 tuple 不需要声明就可以使用, 所以 struct 也一样..... 最终, 这里跟 rust 一样, tuple 就是一种 struct
+...
+上面那段的说法几乎已经就直接是鸭子类型了...但完全是鸭子类型也并不好...所以,  匿名struct 与 匿名struct 之间是鸭子类型, 有名struct 到 匿名struct 是鸭子类型, 反之不是...但是 有名struct 与 有名struct 之间应是实际类型, 这样才能确定 有名struct 的虚函数表
+上面的鸭子类型比较特殊: 大的可以转小的, 因为大的有小的的所有字段. 小的也可以转大的, 如果大的那些字段有默认值
+
+类型注重匿名类型与实名类型... tuple dict function 都是匿名类型
+
+async block 会向下传染, 类似 dart2 的 const 会向下传染一样... 另外, rust 的 mut 也是向下传染, 跟 dart2 的 const 一样..

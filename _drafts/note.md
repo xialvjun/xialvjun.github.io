@@ -87,3 +87,421 @@ postgres: json: https://www.postgresql.org/docs/9.6/static/functions-json.html
 
 做个小说站，消除起点的缺点：
 起点的模式下，小说作者旱的旱死，涝的涝死。应该推出个小说平台，能减少高低收入差距，例如没有前十排行，只有无限列表排行，这样就消除了 第十名与第十一名 的巨大差距（他们本该没有太大差距的）
+
+
+
+# 编译原理 -- QQ 聊点记录：
+红瞳  10:37:09
+" ChaosBot 09:31:48
+应该是vlang.io这个 "
+用 go 编译的编译器如何做到没有 gc
+
+自动姬  10:38:35
+这有啥关系。你把编译器实现成不需要 gc 的，用啥语言编译都一样没有 gc
+
+我傻逼我自豪  10:38:40
+大概是语言本身没 GC ？
+
+我可以吞下自己而不伤身体  10:39:17
+编译器用不用gc跟语言用不用gc有啥关系
+
+rust的优势  10:44:04
+编译后端用不用gc，和语言gc有关，前端无关
+
+双马尾大胸DCjanus  10:47:29
+编译器和编译产出有卵子关系。。。你用go实现一个C语言编译器难道他编译出来的二进制就带gc了？
+
+红瞳  10:48:58
+不知道怎么用 go 实现一个 C 语言编译器
+
+双马尾大胸DCjanus  10:49:15
+@红瞳 聚聚说笑了！
+
+红瞳  10:49:27
+真不知道
+
+ChaosBot  10:51:14
+[图片]
+你等开源了看看
+
+红瞳  10:53:34
+以我的理解，go 要实现 C 语言的编译器，最多也只能做到把 C 代码编译为 LLVM 代码或汇编代码，但做不到把 C 代表编译为机器码
+
+我傻逼我自豪  10:53:54
+？！为啥你会有这种错觉
+
+双马尾大胸DCjanus  10:54:09
+" 红瞳 10:53:35
+以我的理解，go 要实现 C 语言的编译器，最多也只能做到把 C 代码编译为 LLVM 代码或汇编代码，但做不到把 C 代表编译为机器码 "
+ 为何你会有这种错觉。。。
+
+双马尾大胸DCjanus  10:54:29
+只是现在流行前后端分离的架构而已。。。
+
+双马尾大胸DCjanus  10:54:44
+Go做的C编译器直译汇编有啥问题么
+
+我傻逼我自豪  10:54:46
+反正机器码就是各种 binary ，写呗
+
+天字一号抽象吹  10:55:49
+简单说 编译器做的工作不就是从一种表示的代码映射成另外一种吗
+
+巧可老师单推  10:56:04
+" 红瞳 10:53:35
+以我的理解，go 要实现 C 语言的编译器，最多也只能做到把 "
+ ？？你在说什么
+
+红瞳  10:56:08
+" 双马尾大胸DCjanus 10:54:44
+Go做的C编译器直译汇编有啥问题么 "
+就是说这种还需要汇编编译器啊
+
+大家好！我来问一个问题，如下图：  10:56:16
+" 红瞳 10:53:35
+以我的理解，go 要实现 C 语言的编译器，最多也只能做到把 C 代码编译为 LLVM 代码或汇编代码，但做不到把 C 代表编译为机器码 "
+ C语言编译器也就是个普通的可执行文件，go语言来写该怎么编译还是怎么编译
+
+双马尾大胸DCjanus  10:56:26
+" 红瞳 10:56:09
+ 就是说这种还需要汇编编译器啊 "
+ ???
+
+双马尾大胸DCjanus  10:56:41
+大佬你要不要重新学一下编译原理。。。
+
+巧可老师单推  10:56:45
+" 红瞳 10:56:09
+就是说这种还需要汇编编译器啊 "
+ ？？你就不能用go把那个也写了吗
+
+" 双马尾大胸DCjanus 10:56:41
+大佬你要不要重新学一下编译原理。。。 "
+
+红瞳  10:58:00
+好吧，重新学编译原理。。。
+
+JonirRings-切图仔-成都  10:58:01
+[表情]编译器的工作就是把一种语言转换成另一种语言。
+一般所谓的二进制你可以看成机器语言，表示成汇编。从汇编转换成二进制的工具，称之为汇编器 assembler
+
+JonirRings-切图仔-成都  10:59:37
+而汇编器，你可以看成一个超大的键值对table，和几个基本的计算逻辑（要算跳转地址）。知道这个，要实现它的话，语言限制就小了。
+
+我傻逼我自豪  11:00:06
+" JonirRings-切图仔-成都 10:59:37
+而汇编器，你可以看成一个超大的键值对table，和几个基本的计算逻辑（要算跳转地址）。知道这个，要实现它的话，语言限制就小了。 "
+ 其实不用想这么深，就当成一个特殊点的 binary ，啥语言不能写
+
+我傻逼我自豪  11:00:12
+js 都可以写汇编器
+
+JonirRings-切图仔-成都  11:00:38
+是的，只要这个语言够处理二进制和文件的库或者api，就能写。
+
+自动姬  11:03:12
+" 红瞳 10:53:35
+以我的理解，go 要实现 C 语言的编译器，最多也只能做到把 C 代码编译为 LLVM 代码或汇编代码，但做不到把 C 代表编译为机器码 "
+ 可以的，Golang 自带了一个 Plan 9 汇编器，用 Go 写编译器的话可以就用自带的汇编器直接生成汇编
+
+JonirRings-切图仔-成都  11:09:13
+说到编译器，我最近再看nes，当年那些大佬写游戏，真的就是用汇编手写，拿草稿纸做跳转计算啊[表情]
+
+JonirRings-切图仔-成都  11:10:04
+昨天看了一个叫做micro mage的游戏开发小故事，他们为了把游戏塞进40k的空间内，做了各技巧。
+
+巧可老师单推  11:10:08
+" JonirRings-切图仔-成都 11:09:13
+说到编译器，我最近再看nes，当年那些大佬写游戏，真的就是用 "
+ 当时还有别的方法吗？
+
+JonirRings-切图仔-成都  11:10:30
+国外的兄弟们，retro爱好真的好强烈，时至今日还有人为nes开发游戏。
+
+红瞳  11:12:19
+[图片]
+代码 -> AST -> 解释运行
+            -> 之前把编译理解成 解释器+AST 打包后的一个整体
+            -> 下面两个才是编译
+            -> 拼接出二进制
+            -> 转换AST为汇编代码 -> 汇编编译器编译汇编代码拼接出二进制
+
+红瞳  11:12:21
+是吗
+
+我可以吞下自己而不伤身体  11:12:49
+不是
+
+我可以吞下自己而不伤身体  11:13:08
+不对，应该说不全面
+
+JonirRings-切图仔-成都  11:13:10
+不是，缺了链接器
+
+我可以吞下自己而不伤身体  11:14:16
+解释也分解释ast和解释中间码
+
+趙雪松是死變態  11:15:32
+" 红瞳 11:12:19
+[图片] "
+ AST 转为汇编是一个很大的步骤，通常语言还会再次转换成为自己设立的 IR
+
+红瞳  11:15:52
+[图片]
+代码 -> AST -> 解释运行
+            -> 之前把编译理解成 解释器+AST 打包后的一个整体
+            -> 下面两个才是编译
+            -> 拼接出二进制
+            -> 转换AST为汇编代码 -> 汇编编译器编译汇编代码拼接出二进制
+代码整体变为 AST 的时候，就已经通过了编译器的类型校验
+还有另外一种解释器（也是目前大部分解释器的实现方式），是代码一边 AST，一边解释运行，而并非整体转为 AST
+
+我可以吞下自己而不伤身体  11:16:09
+" 趙雪松是死變態 11:15:32
+AST 转为汇编是一个很大的步骤，通常语言还会再次转换成为自 "
+ √
+
+JonirRings-切图仔-成都  11:16:23
+前端：把高级语言转换成ir
+中端：分析ir的逻辑并优化裁剪ir
+后端1：将ir转换成对应平台的汇编，根据情况才去对应平台的最优指令集和通用指令集
+后端2：将汇编转换成二进制的单独块儿
+链接器：根据链接脚本和二进制文件的标注信息进行链接，形成最终二进制文件。
+
+趙雪松是死變態  11:17:41
+在 rust 我们是这样的： rust -> AST/HIR -> HAIR -> MIR -> LLVM IR -> machine code
+
+趙雪松是死變態  11:18:38
+其中 HAIR 的存在可以无视，因为听说那个不过是用来做单元测试而已
+
+红瞳  11:18:41
+链接器是指：编译器是一个文件一个文件的编译代码，然后链接器把编译后的文件里面的变量啥的偏移量，整体偏移。。。是吗
+
+我那截图上的是指把整个程序，放到一个文件中了，得到整个的 AST。。。
+
+JonirRings-切图仔-成都  11:22:36
+差不多啦。
+链接器脚本里面要标注入口位置，分段标记之类的，链接的时候就要计算偏移，把二进制文件中的对应符号给替换了，有些不需要替换的放到符号表里面，让装载器在运行式加载动态链接库。
+一般广义的编译器是指编译套件，把链接器也包含进去了。就像你可以直接用gcc把c变异成a文件。
+狭义的编译器就是做c到o的工作，但是形成运行文件还是得靠链接器。
+
+红瞳  11:23:11
+IR （不管那上面 HAIR 还是 MIR 还是 LLVM IR）其实就相当于 代码，只是不是文本形式的。。。相当于 JSON.stringify(ast) 存下来
+
+我傻逼我自豪  11:23:13
+" 趙雪松是死變態 11:17:41
+在 rust 我们是这样的： rust -> AST/HIR -> HAIR -> MIR -> LLVM IR -> machine code "
+ 现在 MIR 倒是挺关键的了
+
+JonirRings-切图仔-成都  11:24:56
+" 红瞳 11:23:12
+IR （不管那上面 HAIR 还是 MIR 还是 LLVM  "
+ 代码是二维的逻辑，ast是高维的逻辑。
+
+JonirRings-切图仔-成都  11:25:08
+错了，ir是高维的逻辑。
+
+红瞳  11:26:17
+呃，不懂。。。不过今天学到的，感觉已经够了。。。
+
+红瞳  11:26:25
+谢谢
+
+
+# 数据库冗余外键该不该要
+https://rodgersnotes.wordpress.com/2010/09/18/redundant-foreign-key/
+https://dba.stackexchange.com/questions/68951/is-it-recommended-to-have-redundant-foreign-key-columns
+https://stackoverflow.com/questions/40553231/storing-redundant-foreign-keys-to-avoid-joins
+a
+b a.id
+c b.id
+d c.id
+select d.* from d left join c on c.id = d.cid left join b on b.id = c.bid left join a on a.id = b.aid where a.id = 'abc'
+并不影响写 dataloader
+select d.* from d left join c on c.id = d.cid left join b on b.id = c.bid left join a on a.id = b.aid where a.id in ('abc', 'bac')
+
+# 数据库冗余外键该不该要，以及查询方法
+https://stackoverflow.com/questions/40553231/storing-redundant-foreign-keys-to-avoid-joins
+For @max-vernon 's answer, it's true that the first sql is more than the second, but not too much. I prefer the first one. So:
+
+// you have D, and want to get A, then:
+let d = D();
+let c = select C.* from C where C.id=d.c_id;
+let b = select B.* from B where B.id=c.b_id;
+let a = select A.* from A where A.id=b.a_id;
+// or
+let d = D();
+let a = select A.* from A
+            right join B on A.id=B.a_id
+            right join C on B.id=C.b_id
+            right join D on C.id=D.c_id
+            where D.id=d.id;
+
+// you have A, and want to get Ds, then:
+let a = A();
+let Bs = select B.* from B where B.a_id=a.id;
+let Cs = select C.* from C where C.b_id in Bs.map(b => b.id);
+let Ds = select D.* from D where D.c_id in Cs.map(c => c.id);
+// or
+let a = A();
+let Ds = select D.* from D
+            left join C on C.id=D.c_id
+            left join B on B.id=C.b_id
+            left join A on A.id=B.a_id
+            where A.id=a.id;
+
+// if a primary key in composite key, use in operator like this
+select * from hubs where (id, user_id) in ((12, 1),(23,3)); // ((12, 1),(23,3)) is an array of array
+
+
+**postgres index json column**
+https://dba.stackexchange.com/questions/193371/which-is-more-efficient-for-searches-on-json-data-in-postgres-gin-or-multiple-i
+
+
+**graphql schema**
+graphql 本身不会区分 null/undefined , 但是实际传输的 variables 会原样传过去
+即 Json! 不能匹配 null/undefined
+而 Json 能匹配 null/undefined , 并且 args 得到的是原本的 null/undefined
+...另外，JSON.stringify 之后是没有 undefined 的，那个 key 都直接没了
+
+**graphql query after mutation**
+@成都-切图仔-JonirRings  react-apollo 你知道怎么做一个 mutation，mutation 结束之后立即做一个 query 吗。。。有一些 graphql 后端自动生成框架有弄出这种模式:
+type Mutation {
+  create_person(xxxx): PersonResult!
+}
+type PersonResult {
+  person: Person!
+  query: Query!
+}
+
+通过这种形式，客户端可以做到发一次 http 请求，就做到先 mutation 后立即 query。。。然后我现在手写 graphql schema，不想写那么多 XXXResult 类型，有什么方式让客户端直接有类似这种的功能吗？
+
+事实上，我并不需要 Query 的结果。。。我只是想要得到结果后 react-apollo normalize 覆盖到 cache 上去
+
+看起来 batch request 能达到目的 。。。但有几个问题还不清楚：
+1. 据说 batch mutation 是 one by one 执行的，但是不知道可不可以 [mutation_1 query_2 query_3 mutation_4 query_5]  这种 batch，另外，如果支持，它的执行顺序是怎样的？
+2. react-apollo 或者 apollo-client 那边的 api 应该怎么弄？client.mutate(); client.query(); 这样？它不会被打乱顺序，造成 query 在前，mutation 在后了吧。。。
+3. 虽然据说 batch mutation 是 one by one 执行的，但是，去看 apollo-server 的源码，根本没看出来哪里有 one by one 执行的说法。。。https://github.com/apollographql/apollo-server/blob/d0ba38647e92d4798c925972dd92304654dc76b3/packages/apollo-server-core/src/runHttpQuery.ts#L255-L277 根本就不是 one by one 的执行逻辑
+
+如果让自己实现，对于 1 中 [mutation_1 query_2 query_3 mutation_4 query_5], 理想的 batch 应是 [[mutation_1 query_2 query_3],[mutation_4 query_5]], 先执行 mutation_1, 再并发执行 query_2 query_3, 再执行 mutation_4, 在执行 query_5
+
+实在不行, 分两次请求算了 await client.mutation(); await client.query()
+
+等下, 似乎完全不需要有 PersonResult. 因为我们想要有 query 仅仅是用作获取数据 normalize 到 apollo-client 的 cache 上. 然后事实上我们要获取的数据正是 create_person 之后与该 person 相关的数据, 那既然与 person 相关, 那正应该与 Person 关联
+
+
+**graphql mutation control**
+例如 User <--1:{0-1}--> Doctor, 于是有 Mutation
+admin_set_doctor(user_id: ID!, doctor_info: Json!): Dcotor!
+user_set_doctor(doctor_info: Json!): Doctor!
+这里 admin_set_doctor 是给 admin 用的, 需要 user_id 参数, 而 user_set_doctor 则直接从当前 token 中拿 user_id 就好...但是又有 User <--1:N--> Book, 于是有 Mutation
+admin_remove_book(book_id: ID!): Boolean!
+user_remove_book(book_id: ID!): Boolean!
+但事实上, 只要有一个 remove_book(book_id: ID!): Boolean! 接口就好, resolver 里两者不同的仅仅只是 decorator 里的判断不同, 但是 decorator 的判断是可以直接合并的
+所以这里不知道怎样才是最佳实践: 是用一个 remove_book 接口还是分 admin_remove_book, user_remove_book; 用一个 remove_book 的话, set_doctor 要不要合并成
+set_doctor(user_id: ID, doctor_info: Json!): Doctor! ... user_id 为空时, 为当前 token 的 user_id
+
+暂时还是全部分开吧
+
+另外, 需要说明的是这里 admin_do_something, user_do_something 的名字并不是说 admin 就是一个 Role, 毕竟 Role 有很多. 这里 admin_ 只是直接被 Role 授权做的事情, 而 user_ 则是与当前 token 的资源所属关系本就可以做的事情
+
+**graphql query control**
+这里有两种设计思路, 例如 User <--m:n--> Org, 于是有 User.orgs, Org.users...然后, 对于 CMS 后台管理端, 我们需要一个 Query.all_orgs 从而作为管理员创建, 修改所有的 Org. 另外, 作为与 Org 有关联的 User, 也是可以修改 Org 的.
+于是, 两种设计思路: 
+1. 非管理员调用 Query.all_orgs 会报错, 他们只能调用 User.orgs
+2. 任何人都可以调用 Query.all_orgs, 只是看到的结果不同, 管理员看到真正的 all_orgs, 非管理员只看到自己能看到的 orgs...
+其实感觉 思路2 有问题, 权限不应该那样玩, 因为完全有可能所有的人都能看到所有的 orgs, 只是非管理员只能修改与自己关联的 orgs... 
+*?todo* 另外, 是 Query.all_orgs(user_id: ID) 好, 还是 User(_id: ID!).orgs 好 ?
+Query.all_orgs(user_id: ID) 是把 graphql 当成纯粹的 rpc 使用
+User(_id: ID!).orgs 则是数据结构关联
+如果 User(_id: ID!).orgs 需要做访问限制, 判断 jwt.uid===_id, 则 Query.all_orgs(user_id: ID) 也要判断 jwt.uid===user_id ...
+但假如 jwt.uid!==user_id 时, 两者又有区别: User(_id: ID!).orgs 是查不到, 而 Query.all_orgs(user_id: ID) 是查到全部的, 隐藏了 user 与 org 的关联关系...
+事实上, 在表结构上, User(_id: ID!).orgs 与 Query.all_orgs(user_id: ID) 就是完全不同的:
+Query.all_orgs(user_id: ID) 看起来 user_id 是 org 的一个字段, 而 User(_id: ID!).orgs 则是 org_ids 是 user 的一个字段, 或者包含前者的表结构逻辑. User(_id: ID!).orgs 更正确...
+*但假如*把 User <--m:n--> Org 换成 User <--1:n--> Book, 则 Query.all_books(user_id: ID) 和 User(_id: ID!).books 两者表结构的逻辑不分上下, 都能用正确的表结构表示
+假设场景: 小学教室的图书角, 学生捐献图书, book.user 是 owner 的意思, book 并非出版书, 而是实体书, 可能会不同的人捐献了同一版本的书.
+假如 User(_id: ID!).books 需要做访问限制, 即不能让人知道某个人有哪些 book, 但可以让人知道某个 book 的 user 是谁. 这样, 除非对方把所有的 book 都看完, 才能知道某一个 user 有哪些 book.
+于是 Book.user 不设限; all_books(user_id: ID) 当 user_id 存在的话, 就设限, 不存在则拿到所有的 books; User.books 完全设限.
+*但假如* User(_id: ID!).books 不需要做访问限制, 那么, Query.all_books(user_id: ID) 与 User(_id: ID!).books 又有什么区别
+all_books 能作为全局管理接口, user.books 则不可以, 即 all_books 的 user_id 是可空参数, 而 user.books 的 user_id 是必填参数, 也即 all_books 功能更强大, 业务风险更多
+all_books 只查一次, user.books 要先查 user 后查 books
+以最小知识原则看, 客户端应该是能只用 user.books 的就只用 user.books, 不行再说 all_books 
+另外, 在扩展性上, 两者也有区别, 待写...
+
+
+**商品有库存, 然后有超卖问题**
+解决方式:
+1. 普通的数据库锁: select for update / for share 
+2. 乐观锁: 取数据的时候, 顺带取一个表示当前数据的状态的一个值(通常是版本号), 之后更新数据的时候, where 语句中判断这个值有没有发生变化. 这里可以是更新库存的时候, where 语句中带上 update product set stock=new_stock where id=id and stock=old_stock... 这样, 如果更新行数小于 1, 则 rollback. 另外, 这句 update 语句必须是事务的最后一行(todo: 事务到底做了什么), 不然, 等它再过一段时间再提交事务, 那那段时间中可能发生超卖
+优缺点: 方式 1 是有的数据库不支持行锁, 只支持表锁, 于是降低并发...如果支持行锁, 那就最好(postgres支持行锁). 方式 2 是当并发较高的时候, 会经常发生 rollback, 用户经常收到报错, 还不如老老实实用锁, 用户多等一下.
+
+add, set, del - get
+insert, update, delete - select
+create, modify, remove - query
+
+
+**AI压缩**
+有大量的类似数据需要存储, 例如全球汽车车祸照片...普通视频, 内容接近, 时间相邻的两帧之间, 数据可以被压缩...然后完全可以把这点拓展开, 成为内容接近, 时间不相邻的 内容也能被压缩...其实那时的压缩是 生成了一个版本的 统一数据模型...这个模型可能挺大, 当相对全球数据又很小...然后每张照片都有自己与这个统一数据模型的差值, 实时计算得出原照片...整个的是无损压缩
+
+**gql 构建 schema 设想**
+```ts
+// schema.ts 这种写法的优点是 typeDefs 与 resolvers 能同步更改, 避免两边出现相差
+const schema: { typeDefs: any, resolvers: any } = make_schema`
+type Person {
+  _id: ID! ${async (root, args, ctx, info) => { return root._id }}
+  name: String!
+  books(name_like: String!): [Book!]! ${async (root, args, ctx, info) => db.manyOrNone(`select * from book where person_id=? and name like ?`, [root._id, args.name_like])}
+}
+`
+
+// 或者... 不过这种不知道怎么把 typeDefs 给合并起来
+const Person = make_schema`
+type Person {
+  _id: ID! ${async (root, args, ctx, info) => { return root._id }}
+}
+`
+
+// 暂时是上面一种写法
+export function make_schema(strings: TemplateStringsArray, ...values: any[]) {
+  let typeDefs = '', resolvers = {};
+  
+  strings.forEach((str, idx) => {
+    typeDefs += str;
+
+    let type_or_fields = typeDefs.match(/((scalar|type)\s+\w+)|(\w+(\(.+\))?:)/g);
+    type_or_fields.reverse();
+    let is_field = type_or_fields[0].endsWith(':');
+    let type_name = type_or_fields.find(it => it.startsWith('scalar') || it.startsWith('type')).split(/\s+/)[1];
+    if (is_field) {
+      let field_name = type_or_fields[0].match(/\w+/)[0];
+      resolvers = { ...resolvers, [type_name]: { ...resolvers[type_name], [field_name]: values[idx] } };
+      // resolvers[type_name][field_name] = values[idx];
+    } else {
+      resolvers = { ...resolvers, [type_name]: values[idx] };
+      // resolvers[type_name] = values[idx];
+    }
+  });
+
+  return { typeDefs, resolvers };
+}
+
+
+export const schema = {typeDefs: '', resolvers: {}};
+export const gql = (strings: TemplateStringsArray, ...values: any[]) => {
+	let s = make_schema(strings, ...values);
+	schema.typeDefs += '\n' + s.typeDefs;
+	lodash.merge(schema.resolvers, s.resolvers);
+	return schema;
+};
+
+```
+
+
+**高考不公平问题**
+有北京/深圳等地高考分数线低, 有衡水/黄冈等地高考分数线高, 有新疆/西藏等地高考分数线低...
+北京/深圳 取素质教育
+衡水/黄冈 取应试教育
+新疆/西藏 连基础教育设施都不齐备
+这其实是教育公平的问题: 教育设施不齐备的, 应该努力让它教育设施齐备; 应试教育是贫民阶层通向上层通道的最根本的途径, 必须保全; 素质教育是一种新思想, 可以鼓励.
+所以, 个人认为最公平的做法应是: 全国统一高考, 试卷统一, 分数线统一; 各高校可以按自己喜欢的特长素质, 对取素质教育有成果的学生加分, 但必须保证没加分进来的学生的比例在 A% 以上; 至于教育设施不齐备的, 这是社会之殇, 整个社会应该从其他的方面去弥补它, 例如政府在那些地区大力鼓励投资, 但不应以损害社会的潜力为代价去弥补.
+然后, 上面说的 A% 这个数值必须是全国统选得出的, 就跟选总统一样. 政府可以再定义一个 B%, B 必然大于等于 A, 要求所有高校使用 B 这个数值. 这个 B 的改动就是政府的事情了, 不涉及社会结构.
