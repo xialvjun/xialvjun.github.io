@@ -22,6 +22,7 @@
 如果有工具能帮我们自动生成类型, 那 typescript 就能在编译阶段帮我们发现更多的错误. 于是, 我们有:
 - [schemats](https://github.com/SweetIQ/schemats) 根据数据库表结构生成 ts 类型文件;
 - [skm_ts](https://github.com/xialvjun/skm_ts) 根据 graphql 的 schema.gql 生成参数的 ts 类型文件;
+> replace skm_ts with https://github.com/dotansimha/graphql-code-generator or https://github.com/prisma/graphqlgen from https://github.com/19majkel94/type-graphql.
 
 --------
 
@@ -30,7 +31,7 @@
 例如 schemats 帮我们根据生成了数据库表结构对应的 ts 类型, 如果我们再能根据此类型写出某些 typesafe sql builder 需要的对象, 再用那些对象做 sql 查询, 那基本可以保证自己的 sql 语句至少语法上是正确的, 不会有表名写错了, 字段名忘改了的情况出现.
 > 至于那些并不 typesafe 的 sql builder, 例如 [knex](https://knexjs.org), [sqorn](https://github.com/sqorn/sqorn) 则可能会出现表名写错, 字段名忘改的情况, 但它们仍然是非常实用的库.
 
-不过目前还没找到足够好的 typesafe sql builder, 有几个大家可以自己评估下: [type-sql](https://github.com/ggmod/type-sql), [@hediet/typed-sql](https://github.com/hediet/ts-typed-sql), [sqlizer 概念评估](https://github.com/jtheisen/sqlizer)
+不过目前还没找到足够好的 typesafe sql builder, 有几个大家可以自己评估下: [type-sql](https://github.com/ggmod/type-sql), [zol](https://github.com/MedFlyt/zol), [sql-typed](https://github.com/joshdover/sql-typed), [@hediet/typed-sql](https://github.com/hediet/ts-typed-sql), [sqlizer 概念评估](https://github.com/jtheisen/sqlizer)
 
 但其实我们可以有更简单, 更方便的方式----TypeScript Server Language Service Plugin----[ts-sql-plugin](https://github.com/xialvjun/ts-sql-plugin). 
 
