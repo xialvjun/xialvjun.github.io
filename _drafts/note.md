@@ -511,3 +511,311 @@ export const gql = (strings: TemplateStringsArray, ...values: any[]) => {
 两个问题:
 1. 多个 render props 的嵌套会导致 callback hell 类似结果，直接让你的代码反人类。 ---- 为什么 callback hell 就叫反人类呢? js 中事件回调函数产生 callback hell 是反人类是因为本来我们是在写从上到下的命令式编程, 中间突然插入了个事件回调这样的声明式编程, 打乱了代码逻辑...可是 react jsx 本来就是声明式编程啊, 它产生 callback hell 不是理所应当的吗? 使用 render props 的方式, 我们明确的知道一个变量的作用域就在那一块, 所以想知道那个变量到底是被怎么使用的只要看那一块的代码就足够了, 这不是很好嘛? 至于代码嵌套看起来不好看的问题, 我觉得好代码应该是 好写 + 好阅读(而不是所谓的好看)...
 2. 它们致命是缺点是并不适合中大型项目，它们自由度太高，缺乏对业务代码的约束 ---- 为什么灵活就不适合中大型项目? 要不要统一它应取决于团队管理, 而非技术管理. 你再怎么不灵活的东西, 别人非要换种方法用你也没辙, mirror 别人就是 const {app} = actions; 然后单独使用 app变量, 想少打几个字, 你一样要看半天才能反应过来这是调用 action, 或者有人自以为是, 要再对这 actions 做封装...团队不能管理好, 靠技术限制, 只能是防君子不防小人. 大型项目团队开发, 重点还是要做好团队管理.
+
+
+**websocket 应用逻辑**
+http://arthas.com.cn/2018/04/23/websocket%E9%95%BF%E8%BF%9E%E6%8E%A5%E5%8F%8A%E5%BF%83%E8%B7%B3%E5%AE%9E%E7%8E%B0/
+https://github.com/zimv/websocket-heartbeat-js/issues/6
+<!-- ? 错误 -->
+server 不定时向 client 发送消息，client 处于无保证状态，可能会被正常关闭[WebSocket.close(), 正常关闭网页, 正常关闭浏览器]
+正常关闭的话，client 会向 server 发送一个关闭 handshake，于是两边正常关闭... 但是有：
+1. client 可能会被异常关闭，例如突然断电，kill 浏览器进程， server 收不到关闭 handshake，不会触发 server.onclose， send(msg, err => ) 的 callback 中 err 也始终是 null
+这会永久浪费 server 性能， 需要 server 主动 ws.terminate()
+2. client 可能没有关闭，但是 client 的网络暂时断了（client 短暂断网不会触发 client.onclose, 除了 client 断网，还有 websocket 太久没消息，服务商自动关掉这个 websocket）
+这种情况下，server 会继续发送消息，client 收不到消息。当 client 网络重新连接后，client 会重新收到消息... 
+(另外，client 断网太久会触发 client.onclose，server 则仍然继续发消息)
+client 正常关闭，server 会收到关闭 handshake，也正常关闭
+server 正常关闭，client 会收到关闭 handshake，也正常关闭
+client 异常关闭，不再以同 IP 上线，server 会继续发送消息很长一段时间，并且 server.send(msg, err => assert(err, null))
+client 异常关闭，很快以同 IP 上线，server 立即收到关闭 handshake
+server 异常关闭，不再以同 IP 上线, client 都会等待一段时间后，触发 client.onclose
+server 异常关闭，很快以同 IP 上线，client 都会等待一段时间后，触发 client.onclose。期间，如果 client.send(msg, err => err 是 null)，但立即触发 client.onclose
+
+<!-- ? 正确 -->
+总结: server 与 client 完全相同
+一端正常关闭，另一端也会正常关闭。
+一端异常关闭（断网，更准确的说是找不到此 ip），另一端会等待一段时间后再关闭。
+如果这段时间内找到了此 ip:
+   如果双方进程都保留着 websocket 连接，则连接恢复正常，并且把这段时间内 send 的消息一块发完(只保证自己这边的顺序，至于双方的顺序就不被保证了)
+   如果其中一方连接丢失，则另一方会在 send 的时候发现并立即触发自己的 close。
+       或者等待一段时间后关闭自己
+连接正常，哪怕没有任何消息，也不会关闭：所以本质上来说，websocket 本身就有个底层传输层心跳包，不然无法出现“等待一段时间后再关闭”的情况
+                     但长时间没有消息，运营商可能会断开连接，让两端各自认为另一端异常关闭，并且一直找不到 ip，哪怕明明 ip 在那儿，连接在那儿。
+
+于是, 单纯的对于使用而言, 只要 client.onclose = () => { setState({closed:true}); client.reconnect() } 就好
+如果要求界面上完全显示（即要不 client 显示自己已断开连接，要不 client 就要立即响应 server 变化）： server 要每秒向 client 发 **应用层心跳**, client 如果两秒内没收到心跳，就断开自己，并显示已断开，并重新连接
+如果要求 server 消息不丢失（事实上做不到，应该改变数据模型）
+
+
+**my own immer**
+```ts
+type ExtractArray<T extends any[]> = T extends (infer R)[] ? R : any;
+
+const pgss = Symbol('$$__proxy_get_set__$$');
+// type PGS<T> = (T extends (infer R)[] ? (PGS<R>)[] : ({ [P in keyof T]: PGS<T[P]> })) & { [pgss]: T }
+type PGS<T> = { [pgss]: T } & { [P in keyof T]: PGS<T[P]> }
+// if want addEventListener, write `listeners = fn[]` outside
+// ! 这里 pgs+pgss 可以用于 全局状态管理和局部状态管理. 这里的方便的地方是 get 不会报错, 类似 lodash.get 方法...
+// 不过, 真正严格的程序, 还是应该能保证数据有正确的初始值, 但这扔不妨碍 pgs 很方便, 至少它可以不用太多的检测 api 结果: pgs(res).data.list.map(item => <div/>), 不必 res && res.data && res.data.list
+function pgs<T>(base: T, onChange?: ((n: T, o: T) => any)) {
+  const proxy: PGS<T> = new Proxy({}, {
+    get(t, p: (keyof T) | (typeof pgss), r) {
+      if (p == pgss) {
+        return base;
+      }
+      try {
+        const v = base[p];
+        if (Object.prototype.toString.call(v) === '[object Array]') {
+          const pv = pgs(v, (n, o) => proxy[p] = n as any);
+          const rs = (v as any as any[]).map((it, idx) => pgs(it, (n, o) => (pv as any)[idx] = n));
+          (rs as any)[pgss] = v;
+          return rs;
+        }
+        return pgs(v, (n, o) => proxy[p] = n as any);
+      } catch (error) {
+        return pgs(undefined, (n, o) => proxy[p] = n as any);
+      }
+    },
+    set(t, p: keyof T, v: T[typeof p], r) {
+      const o = base;
+      if (Object.prototype.toString.call(base) === '[object Array]') {
+        base = (base as any).slice();
+        base[p] = v;
+      } else {
+        base = { ...base, [p]: v };
+      }
+      onChange && onChange(base, o);
+      return true;
+    }
+  }) as any;
+  return proxy;
+}
+pgs.symbol = pgss;
+
+pgs([1,2,3,4]).filter(n => )
+const obj = pgs({ a: { b: [1,2,3,4] } });
+
+obj.a.b[0][pgss] = 345
+
+function produce(base: any, fn: any) {
+  let pro = pgs(base);
+  fn(pro);
+  return pro[pgss];
+}
+
+// function proxy(base: any) {
+//   const get: typeof base = new Proxy({}, {
+//     get(t, p, r) {
+//       return base[p];
+//     }
+//   });
+//   const set: typeof base = new Proxy({}, {
+//     set(t, p, v, r) {
+//       return true;
+//     }
+//   });
+//   return [get, set]
+// }
+```
+
+
+**栈与堆**
+红瞳  13:48:11
+生成 C 不比生成 Go 好?  … C 几乎不需要 runtime, 不需要垃圾回收… V compiler 会检测语法自动帮我们垃圾回收
+拼音  13:48:40
+不是说go后端的调度器复杂
+红瞳  13:49:11
+为什么要在语言层面实现调度器... 在 lib 层面实现调度器才是正确的思路啊...
+拼音  13:49:35
+作用域的那种垃圾回收不一定比运行时专门一个算法的好
+拼音  13:50:33
+比如极端情况下，算法可能会直接工作在另一个cpu
+拼音  13:50:41
+垃圾回收的开销就是0了
+红瞳  13:52:43
+就拿 web server 来说... go 在语言层面实现调度器... 于是一个请求进来,  发起了 两个 io… 两个 io  结束后都会修改一个变量 context … 这样, 在 go 里, 就必须把那个变量 context 用 锁 包起来.... 但如果是 库 层面实现调度器, 那我们可以实现一个 一个 request 只会在一个 scheduler 上, 不会跑到别的 scheduler 上去.... 这样, 那个 变量 context 就不需要锁了...
+拼音  13:52:51
+https://blog.codingnow.com/2011/04/lua_gc_multithreading.html
+红瞳  13:53:30
+" 拼音 13:50:33
+比如极端情况下，算法可能会直接工作在另一个cpu "
+如果是工作在另一个 cpu 上, 那就是两个 核 同时修改一块内存... 会出错的... 
+拼音  13:53:47
+不会的
+拼音  13:53:59
+线程自己都会跳来跳去
+红瞳  13:54:28
+跨线程能访问的 内存, 都必须用 锁包起来
+拼音  13:54:59
+不用
+拼音  13:55:12
+你要保持一致性的话才要锁
+拼音  13:55:55
+所以有时候FP的多线程程序比OOP还快，因为偏向只读数据结构
+拼音  13:56:01
+很多地方不需要锁
+红瞳  13:56:14
+而 作用域 实现的垃圾回收, 它其实就跟 栈 的垃圾回收一样…… 
+红瞳  13:56:14
+https://github.com/xialvjun/xialvjun.github.io/blob/master/_posts/2018-07-10-why-stack-and-heap.md
+拼音  13:57:39
+这个理解有点问题
+拼音  13:57:49
+真实的代码其实是a在开头
+拼音  13:58:09
+int main() {
+  int a;
+  for(;;) {
+    a = 1;
+  }
+}
+拼音  13:58:29
+这样应该就懂了
+红瞳  13:58:47
+不… 应该是  int main() { for(;;) { int a; a=1; } }
+红瞳  13:58:59
+因为 C 是 块作用域, 不是函数作用域
+拼音  13:59:10
+在int a的时候就分配了内存，作为栈内存的一部分
+拼音  13:59:29
+作用域跟内存是两个概念
+拼音  13:59:55
+啊，c语言并不是基于作用域管理内存的语言
+拼音  14:00:14
+rust
+拼音  14:00:17
+可能是，没看过
+红瞳  14:02:00
+我是说 C 语言对于栈上的内存的管理 是基于 作用域的... 对于 堆上的内存的管理, 是手动的... 然后 rust 它跟 c++ 的 RAII 是一样的, 它们本质上是把  堆 上的内存 跟 栈上的内存 关联起来了... 形成某个时刻栈上的内存被清掉的时候, 堆上的内存也被清掉
+拼音  14:02:27
+C 语言对于栈上的内存的管理 是基于 作用域的
+不是的
+拼音  14:02:35
+就是基于函数调用
+红瞳  14:03:04
+所有语言的关于 栈上的 内存的管理, 都是基于作用域 的....
+拼音  14:03:08
+函数调用时候在栈上分配一个帧，退出的时候直接出栈
+拼音  14:03:20
+几乎所有语言的栈内存都是这样的
+红瞳  14:03:32
+至于你那个语言是  函数作用域, 还是 块作用域.... 那是看语言本身
+拼音  14:04:18
+作用域只对程序员有意义
+拼音  14:04:27
+编译之后就没有作用域的说法了
+拼音  14:05:27
+或者把栈帧叫作用域也可以，但还是跟块那个对程序员才有意义的作用域不是一回事
+红瞳  14:11:30
+编译器到底是直接使用 对程序员就有意义的 作用域来决定怎么操作内存, 还是使用自己的 函数 层面作用域... 那只是编译器后期优化  才做的事情….. 单纯对原理而言, 编译器回收内存的最早时间 就是   变量离开了对程序员有意义的作用域
+红瞳  14:11:57
+编译器可以延迟回收内存, 但不可以提前回收内存
+拼音  14:14:08
+那你觉得栈内存跟堆内存的区别是啥
+红瞳  14:14:09
+而垃圾回收, 则不可避免会造成   世界暂停… 或者至少是部分世界暂停 (就例如一块空间里的时间停止, 外接跟它无法交互, 它内部无法交互, 它跟外界无法交互)
+拼音  14:14:56
+你这个理解的话，c不是必须有gc了吗……
+红瞳  14:15:34
+… 不知道你怎么理解的... 我都要怀疑是不是我语文不好了
+红瞳  14:15:53
+无所谓... 我只是问下 v 的评价…
+拼音  14:15:53
+在变量离开对程序员有意义的作用域的时候回收内存 <-这个行为就是垃圾收集的工作
+红瞳  14:16:20
+不是的....
+红瞳  14:16:38
+垃圾收集才没有那么智能, 知道 变量离开了 作用域...
+拼音  14:16:48
+那gc的工作是啥
+红瞳  14:17:04
+gc 是 pull…. rust 是 push
+拼音  14:17:52
+啥是pull
+红瞳  14:19:28
+gc 是 时不时地 停止整个程序的运行, 然后遍历所有变量, 看哪些变量已经离开作用域, 不再有可能被访问到, 再把那些变量清除掉....
+rust 那种是  变量离开作用域, 立马就通知操作系统, 清除自己的内存...
+诺, gc 是时不时地访问, 是轮询, 是 pull…. rust 那种是 通知, 是 push
+拼音  14:20:15
+那gc用不用管栈内存
+红瞳  14:20:40
+gc 不用管 栈内存啊… 因为 栈内存 自带 push 啊
+拼音  14:21:25
+那栈内存是什么时候释放的
+红瞳  14:23:46
+变量离开 作用域 的时候, 也就是 作用域结束的时候... 这里我把栈的没有经过任何优化的操作 理解为: 进入作用域就在栈顶新加一块内存, 离开作用域的时候就把那块内存清掉
+拼音  14:24:42
+你debug js之类的东西的时候
+拼音  14:25:14
+断点其实是能看到调用栈的
+拼音  14:25:43
+在for里面断点会，调用栈会多一个for专门的位置吗
+红瞳  14:27:34
+……… 算了, 不说了, 我也不是为了说服你… 你老拿优化后的, 或者是 中间加了更多操作 后的东西说事.... 
+拼音  14:27:56
+debug的时候是没优化的
+拼音  14:30:34
+如果这种行为展示出来的都跟实际执行的不一样，调试器还有啥用……
+红瞳  14:30:52
+那也是中间加了更多操作的... debug 会把栈保留下来... 于是如果是 无限尾递归, 可能正常运行没有事, 但加了 debug, 可能就内存崩溃了
+拼音  14:31:50
+对的，但调试器保留的就是真实的栈啊
+拼音  14:32:05
+保留这个操作不影响栈的内容
+
+
+
+**dart initializer list 要怎么理解?**
+就是先不管 super class, sub class… 就一个普通的 class… 如果这个 class 没有构造函数, 那它就有一个 默认的空参数的构造函数…
+如果有构造函数, 那就没有那个空参数的构造函数(其实感觉这里可以理解为先运行那个空参数构造函数, 再把 this 代入运行那个自己写的构造函数)… 
+然后有子类了... 子类不会继承父类的构造函数… 如果子类没有构造函数, 那创建子类实例 会先运行父类空构造函数, 再代入 this 运行子类空构造函数… 
+给子类写个普通的构造函数, 那它会先运行 父类的空参数构造函数, 再把 this 代入子类的新写的构造函数
+
+普通的 class:
+空参构造函数 -> this 代入手写的构造函数(手写的无名与命名构造函数地位等同, 不会是先运行手写无名构造函数, 再运行手写命名构造函数)
+子类 class:
+父类空构造函数 -> this 代入子类空构造函数 -> this 代入子类手写构造函数
+initializer list:
+先运行父类空参构造函数, 再把 this 代入 initializer list, 里面运行父类手写构造函数, 再把 this 代入 子类手写构造函数
+
+
+**no cookie no cors**
+如果所有 web 服务器根本就无视 cookie，那 cors 还有必要存在吗？
+假如说 没 cookie， 那 cors 要保护啥呢？  xss什么的？
+CORS 能防御 XSS ?   XSS 不是跟 有坏蛋在你的网站上提交信息, 被保存至你的网站的服务器的数据库中, 然后, 那信息被渲染到你的网站的其他用户的页面上, 然后那信息还是一段执行脚本, 这样就拿到了你的用户在你网站的私密信息, 拿到了他的 token …
+CORS 跟 XSS 有啥关系...
+拿到了 token…坏蛋想要做啥事不行, 非要在浏览器上做坏事, 用 curl 做坏事不更简单
+我觉得 cors 就是保护 cookie 的.,.. 但是如果 网站根本不用 cookie, 那根本就没必要让浏览器有 cors
+cookie 在浏览器上一直没被保护... 别人的网站页面向你的服务器发请求, 一样会发送 cookie 
+浏览器弄个 cors 就是为了让 服务器决定 哪些网站页面能向你的服务器发请求
+哪些网站页面能向你的服务器能发哪些请求
+allow method 是能发哪些请求...
+allow origin 是哪些网站页面...
+这些都是由你的服务器来决定的
+而服务器需要决定这种东西, 全都是因为  浏览器无法保护 cookie… 别人的网站只要是向你的服务器发请求, 你的 cookie 就会被发送
+但浏览器又为了兼容性, 没法改 cookie 的运行机制…所以只能弄个 cors 来让服务器决定这个事了... 本来如果 能改 cookie 的运行机制的话, 完全可以把 cookie 更改为 只有 url 地址栏的域名与 cookie 的域名相同的页面, 才能使用 cookie… 
+CSRF 是漏洞的名字.... CORS 是功能名字… 浏览器实现了 CORS 这个功能, 才能一定程度上抵挡 CSRF
+
+https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2017/september/common-csrf-prevention-misconceptions/
+上面的链接说: cors is a mechanism that applications hosted on two different domains to share resources … 完全就是瞎说... 它少了个状语… safely
+cors 是为了安全的跨域共享资源...
+如果只是单纯的跨域共享资源... 呵, n 多年前的浏览器有阻止过吗
+你想怎么共享就怎么共享
+但是 那种共享 是有漏洞的, 就是 csrf 漏洞… 所以出了个 cors 来补这个漏洞
+按链接的说法, cors 不是为了抵抗漏洞的, 而是为了实现功能的... 那开发人员会想, 哦, 那我实现功能就好了, 本来也没漏洞… 于是把 服务端的 cors 配置全都设成 * 
+
+
+**响应式界面**
+```js
+const root = div({ className: 'abc' }, [
+  h1('head head head'),
+  do {
+    let d = div({ onClick: e => d.textContent = parseInt(d.textContent) + 1 + '' }, ['0']);
+    d
+  }
+]);
+document.body.append(root);
+```
+要知道 element 本身就是响应式的, element.value = xxx 就直接让界面改变了... 现在只是 js 变量不是响应式的, 另外, 就是那些 element 不能轻易的拿到引用...所以解决这两点, 就能轻松做到响应式界面了... 可以用 表达式为一级公民 的语言来拿到 element 引用, 响应式... 其实单纯界面数据直接就混在 element 属性里, 改变其属性就改变界面, 至于其他逻辑数据, 就只是事件响应了... 逻辑数据改变 -> 界面数据改变 -> 界面改变
+
+
