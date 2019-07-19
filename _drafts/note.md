@@ -819,3 +819,11 @@ document.body.append(root);
 要知道 element 本身就是响应式的, element.value = xxx 就直接让界面改变了... 现在只是 js 变量不是响应式的, 另外, 就是那些 element 不能轻易的拿到引用...所以解决这两点, 就能轻松做到响应式界面了... 可以用 表达式为一级公民 的语言来拿到 element 引用, 响应式... 其实单纯界面数据直接就混在 element 属性里, 改变其属性就改变界面, 至于其他逻辑数据, 就只是事件响应了... 逻辑数据改变 -> 界面数据改变 -> 界面改变
 
 
+https://www.google.com.hk/search?newwindow=1&safe=strict&ei=eU0oXZ_mDNCWr7wP4fiO0A8&q=%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%89%A7%E8%A1%8C%E7%A8%8B%E5%BA%8F%E6%97%B6%E4%BC%9A%E6%A3%80%E6%B5%8B%E7%A8%8B%E5%BA%8F%E8%AE%BF%E9%97%AE%E4%B8%8D%E5%B1%9E%E4%BA%8E%E8%87%AA%E5%B7%B1%E7%9A%84%E5%86%85%E5%AD%98&oq=%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%89%A7%E8%A1%8C%E7%A8%8B%E5%BA%8F%E6%97%B6%E4%BC%9A%E6%A3%80%E6%B5%8B%E7%A8%8B%E5%BA%8F%E8%AE%BF%E9%97%AE%E4%B8%8D%E5%B1%9E%E4%BA%8E%E8%87%AA%E5%B7%B1%E7%9A%84%E5%86%85%E5%AD%98&gs_l=psy-ab.3...7295.13643..14004...0.0..0.150.3844.3j31......0....1..gws-wiz.iVoIDEmby-4
+
+
+做个浏览器插件, 集合 [Aerys - 窗口标签管理器](https://chrome.google.com/webstore/detail/aerys-tab-manager/kclbicheojedbinfjdjjolmciodoihkl), [OneTab](https://chrome.google.com/webstore/detail/onetab/chphlpgkkbolifaimnlloiipkdnihall), 和 [The Great Suspender](https://chrome.google.com/webstore/detail/the-great-suspender/klbibkeccnjlkjkiokjodocebajanakg) 三者的功能... 然后 aerys 与 onetab 有很多的结合, 要能灵活给 tab 分类, 关闭 tab 时指定分类...其实是创建工作空间 workspace, 然后把 tab 拖到 workspace 中, 可以对整个 workspace 操作, 也可以对单独某个 tab 操作
+其实就是 aerys + onetab = [Freezetab](https://chrome.google.com/webstore/detail/freezetab/ecpipjjckcegdmapdifgigmempnikcjg)...不过 Freezetab 很丑就是了
+好吧, 已经有很好的工具了 [Workona - Tab Manager & Productivity App](https://chrome.google.com/webstore/detail/workona-tab-manager-produ/ailcmbgekjpnablpdkmaaccecekgdhlh)
+
+有个收藏夹搜索插件 [Bookmark Manager Plus](https://chrome.google.com/webstore/detail/bookmark-manager-plus/pfbeenngglcojppheoegjjjomfkejibg) 还行

@@ -458,7 +458,13 @@ enum!(Gender, (
   Female:'F';
   Unknown:'U';
 ));
-会展开为
+// ! const 作为类型在 union 中理论上应该是可以不占 flag 的, 运行时变量如果跟 const 值一样, 例如是相同的数字, 需要用运行时 typeguard 来转化类型
+
+**match / is 到底是什么:**
+首先要确定的是, 就算是 a match const b, 它也不是要求 a 实现 PartialEqual, 把 a 与 b 做运行时比较, 而是要 a 就是 b
+match 是在运行时对比 union 的 flag, 
+
+上面的 enum! 会展开为
 const Gender = (Male:'M';Female:'F';Unknown:'U');
 type Gender = Gender.Male | Gender.Female | Gender.Unknown;
 不行不行... const 对象本身可以作为类型来使用, 所以 const 与 type 的 item 不可重名...需要有一个换个名字, 例如 type GenderT
@@ -555,7 +561,7 @@ const const_random = Math.random();
 而 const_random 在每次程序重新运行, 值都会变化, 只在程序的一个生命周期内值不变;
 
 **rust Sync 不是编译器特例**
-之前以为 rust 的 Sync 啥的是编译器的特例类型...但是仔细想下, 其实不是, 它是 thread 的构造函数要接受的一个普通的 Trait...thread 的构造函数接收一个 闭包结构体, Sync trait 如果所有子元素都 Sync, 那自己就 Sync.... 好吧, 这的确跟通常的 trait 不一样, 通常的 trait 需要自己主动实现, 而 Sync 可以被自动实现, Clone/Copy 是 derive 实现, 自己下面所有的子元素都实现了 Copy/Clone, 其实也是主动实现... 需要有多个 trait 的形容词来实现不同种类的 trait, 甚至是一段编译期逻辑去形容 trait...
+之前以为 rust 的 Sync 啥的是编译器的特例类型...但是仔细想下, 其实不是, 它是 thread 的构造函数要接受的一个普通的 Trait...thread 的构造函数接收一个 闭包结构体, Sync trait 如果所有子元素都 Sync, 那自己就 Sync.... 好吧, 这的确跟通常的 trait 不一样, 通常的 trait 需要自己主动实现, 而 Sync 可以被自动实现, Clone/Copy/PartialEqual 是 derive 实现, 自己下面所有的子元素都实现了 Copy/Clone/PartialEqual, 其实也是主动实现... 需要有多个 trait 的形容词来实现不同种类的 trait, 甚至是一段编译期逻辑去形容 trait...
 rust 有 Drop, 是在离开变量作用域时调用, 这个绝对跟编译器有关
 所有不可测大小的 类型, 都要是 & 借用, 或者 box 指针 包裹
 
@@ -639,3 +645,62 @@ const abc = (a: i8, b_or_c: (b0: i8, b1: i8) | (c0: i16, c1: i16)) => xxx
 此时对 b_or_c: (b0: i8, b1: i8) | (c0: i16, c1: i16) 准确说是 (b0: i8, b1: i8) | (c0: i16, c1: i16) 这部分, 就是结构与 union 在同一级, 解构白白浪费
 应该写成 const abc = (a: i8, b_or_c: (i8, i8) | (i16, i16)) => xxx
 对于没有 union 的倒是可以级联解构 const abc = (a: i8, (b0: i16, b1: i16)) => xxx 这里 (b0: i16, b1: i16) 前的 b: 可以事实上也应该省略, 即解构就不应该原本的它命名, 更符合 不允许解构与 union 在同一级 res: (a: i8) | (b: i16) | (c: i32)
+
+**rust 的 match**
+https://kaisery.gitbooks.io/rust-book-chinese/content/content/Patterns%20%E6%A8%A1%E5%BC%8F.html
+https://kaisery.gitbooks.io/rust-book-chinese/content/content/Match%20%E5%8C%B9%E9%85%8D.html
+https://kaisery.github.io/trpl-zh-cn/ch06-02-match.html
+match 主要匹配 enum, 提取 enum 内部的 struct 的数据(enum 内部的 struct 的字段全是 pub); 也可以单独提取 struct 的内容, 而且可以不提取的字段不写, 即 let a = Point{x:1,y:2}; match a { Point{x,..}=> }... 所以它能遵守里面的字段的 pub 规则
+rust 中用 _ 代表省略单值..., 用 .. 代表省略多值
+
+rust 中有大量特殊 trait, 例如 From(编译器自动帮你转类型), Drop(编译器帮你运行 drop 函数), PartialEqual(复写 =), Add(复写 +) ...
+
+
+**用 item 名字来决定 pub, _开头就 private**
+_ 开头就 private 与 用 _ 代表省略 保持了一致...
+dict/tuple 默认是 pub, 所以 type 也应该默认 pub
+深度 type 例如 type A = (a:i8;b:(c:i8,d:(e:i8,f:i8))) 这种, 如果想要只 pub f, 写得有点多, b-d-f 都写, 不如在 a,c,e 前加 _
+而且如果是只隐藏 e, 则只在 e 前加 _
+tuple 也可以用 _: let a = (1,_2,3) 则 a.0, a.2 可以, 但不可以 a.1... 正好数值 literal 的第一个字符不能是 _, 其他 expression 前加个 _ 也没有问题, _ 与 expr 间可以有空格, 可以没空格
+
+
+**enum**
+mod Color {
+  const RED = 1u8;
+  const GREEN = 2u8;
+  const BLUE = 3u8;
+}
+enum_mod!(Color) ===== Color::RED | Color::GREEN | Color::BLUE;
+type ColorT = enum_mod!(Color);
+其实跟 下面的 并没有什么差别,最多 mod 会在编译期展开,直指 const RED,而 const 对象取属性,则是在运行时取.其实也可以在编译期取,看怎么理解 const
+enum!(Gender, (
+  Male:'M';
+  Female:'F';
+  Unknown:'U';
+));
+=======
+const Gender = (Male:'M';Female:'F';Unknown:'U');
+type Gender = Gender.Male | Gender.Female | Gender.Unknown;
+
+**还是不要有自定义 enum 的内存表达了**
+因为允许自定义的话, 可能出现不同的枚举值, 有相同的内存表达
+const a = 1;
+enum!(Gender, (
+  Male: a;
+  Female: 1;
+  Unknown: 2;
+));
+
+**typescript const type**
+const a = 1;
+const b = 2;
+const c = 1;
+let m: typeof a|typeof b|typeof c = 1;
+let d = 1;
+typeof d ====== number
+const e = 1;
+typeof e ====== 1
+
+
+**宏编程**
+宏有好几种宏, 有的只接受个 token list, 自己对 token list 变换... 有的接受个 expression, 能识别 expression 的类型,
