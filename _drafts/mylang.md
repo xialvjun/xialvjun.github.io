@@ -305,7 +305,7 @@ A < A|B
 async block 会向下传染, 类似 dart2 的 const 会向下传染一样... 另外, rust 的 mut 也是向下传染, 跟 dart2 的 const 一样..
 
 
-
+**tuple and dict**
 if cond_expr expr [else if cond_expr expr]* [else expr]?
 tuple: (a, b, c)
 dict: (a: a, b: b, c: c)
@@ -316,6 +316,37 @@ tuple with dict: (a, b, (a: a, b: b))
 [] is tuple: [a, , c] === [a, null, c]
 () is dict
 {} is code block
+至于原本用 () 改变优先级, 现在都用 {} 来改变优先级, 因为是 code block, 意义保持一致
+
+构造
+1. abc(a, b, c) ------ ts: abc(a, b, c)
+2. abc(a, b, c,) ------ ts: abc(a, b, c)
+3. abc(get_a(), b, get_c()) ----- ts: abc(get_a(), b, get_c())
+4. abc(a: get_a(); b; c) ------ ts: abc({ a: get_a(), b: b, c: c })
+5. abc(a: get_a(); b; c;) ------ ts: abc({ a: get_a(), b: b, c: c })
+> 注意只有一个元素的 tuple/dict 的情况, 例如: 
+abc(a) 这里 (a) 并非构造一个 tuple/dict, 只有 abc(a,) 则是构造一个 tuple, 此 tuple 有一个元素
+abc(a,,c) 这是构造一个 3 元素 tuple, 第二个元素为 null/none/undefined/(), 实际意义是 undefined, mylang 中用 () 替代 undefined, 即 abc(a,(),c)
+abc(a;) 是构造一个 {a:type} 的 dict...
+总结: 
+(a) 仅仅是 a, 并非 tuple/dict
+(a,) 单元素 tuple
+(a, b) 双元素 tuple
+(a, b,) 也是双元素 tuple, 等效于 (a, b)
+(a;) {a:a} 的 dict
+(a; b)  {a:a,b:b} 的 dict
+(a; b;)  也是 {a:a,b:b} 的 dict, 等效于 (a;b;)
+
+解构
+1. fn abc(a: i8, b: i8, c: i16) ------ ts: function abc(a: i8, b: i8, c: i16)
+2. fn abc(a: i8, b: i8, c: i16,) ------ ts: function abc(a: i8, b: i8, c: i16)
+3. fn abc(a: i8, b: (b1: i8, b2: i16,),) ------ ts: function abc(a: i8, [b1, b2]: [i8, i16])
+4. fn abc(a: i8, (b1: i8, b2: i16,),) ------ ts: function abc(a: i8, [b1, b2]: [i8, i16])
+5. fn abc(a: i8; b: 16;) ------ ts: function abc({a, b}: {a:i8, b:i16})
+6. fn abc(a: i8; b: (b1: i8; b2: i16;);) ------ ts: function abc({a, b: {b1, b2}}: {a:i8, b:{b1: i8, b2: i16}})
+> 3 与 6 都只生成了 a, b1, b2 三个变量, 没有生成 b 变量...
+> 3 里可以写 'b: ' 也可以不写 'b: ', 而它可以写 'b: ' 的原因是 6 里必须写 'b: '
+> 3 里可写可不写 'b: ' 在本质上说明了 1-6 这 6 个解构都用了不写 'b: ' 的原理. 拿 1 举例就是 1 本质上是 fn abc (args: (a: i8, b: i8, c: i16))
 
 
 **一直有个问题，没有 undefined 概念的语言要怎么表达 js 中的 undefined**
@@ -398,14 +429,26 @@ as 语法:
 (1,2,3) as (i8,i8) 这等同于 (a:i8,b:i8) = (1,2,3) 有数据丢失, 但不浪费内存... 
 12 as i8|null 等同于 a:i8|null=12 会浪费内存做 union 的 flag...
 (1,2) as (i8,i8,i8) 这是 unsafe 的, 内存不会发生变化... struct Vec<T>{array: box Array<T, isize.max>, array_real_size: isize} 在初始化和之后改变 array 字段的值时就是用这种(重点: 内存不会发生变化)... array! 这个 macro 内部申请了空白内存, 也是这个 unsafe as
+*重点要注意到 as 并不是 编译期类型备注, 而是 运行期内存拷贝*
+**as 关键字并非是编译期的 类型注释, 而是运行期 的 内存拷贝**
+(1,2,3) as (i8,i8) 会在编译期按照类型区别, 制定好拷贝规则, 在运行期实施拷贝
+(1,2) as (i8,i8,i8?) 也一样
+而 (i8,i8,i8?) 类型的空间占用应是 8bit + 8bit + (8bit + 8bit), 第三个 8bit 是表名它是 null 还是 i8
+这种空间占用表明 union 类型只看直接 union 类型, 不提升. 如: (i8,i8,i8?) 虽然从数据的本质上与 (i8,i8) | (i8,i8,i8) 等同, 但是, 词法规则就决定了它的内存布局, 决定了他们是不同的类型, 能在编译期做 as, 从而运行期按照编译期的规则做内存拷贝, 但不能说两者就是完全相同的类型, 没有内存拷贝...
+(i8,i8,i8?) 只是语法糖, 本质上是 (i8, i8, i8 | null), 内存上是 8bit + 8bit + (8bit + 8bit)
+(i8,i8) | (i8,i8,i8), 内存上是 8bit + ((8bit + 8bit) + 8bit) 第一个 8bit 是表明是 (i8,i8) 还是 (i8,i8,i8), 后面三个有两个内存复用
 
 mylang 中改变优先级 应使用 {} 而不是 () , 因为 {} 是 表达式 ... 其实 () 也可以, 如果 () 内部只有一个, 而且末尾没有 逗号 时, 它就是用做改变优先级, 但这只是兼容方案
 连 类型表达式 也可以改变优先级 如 (...Person*100) 如果觉得不放心优先级, 想多添加下, 可以是 (...{Person*100}) 或 (...(Person*100))
 需要注意点: a:(Person) 等同于 a:Person , a:(...Person*1) == a:(Person,) == a:Person*1 ,,,, 
 另外, 也就是说 ... 三点语法只能用在 tuple/dict 中 不能 a:...Person*1
+... 错, 根本不存在类型 (...Person*100) ... 这里想表达的是 100 个 Person ...其实是一个长度为 100 的数组, 但是 tuple 跟数组是不同的, 数组类型必须一致, tuple 类型可以不同
 
 许多语言都用特殊语法定义 模块顶级 item, 例如 fn main() {} 用 fn 定义函数, 然后那个函数可以认为是 const, 可以在编译期调用, 例如 fn add_one(n:num) {return n+1;}; const three = add_one(2); 既然 three 是 const, 那 add_one 肯定也是 const... 要注意 const 一定是编译期能确定的, 但编译期能确定的不一定是 const ...
 例如完全可能有 static a = 1; fn app() {return ++a;} const b = app(); const c = app(); 最终得到 b=2,c=3, 都是 const, 而 a 可以设定是 程序一运行的时候就是 3 了, 之后 b c 那里不用运行; 也可以设定是 a 继续在程序刚运行时是 1, 之后 b c 那仍然不运行, 毕竟 const... 可能 a 程序刚运行时是 3 更好
+... 呃, 还是让 const 不得从 static 中派生更好, 因为允许从 static 中派生, 逻辑太多... 相反, 这完全可以程序员自己手动做:
+const _a = 1; static a = _a; fn app() {return ++a;} const b = _a + 1; const c = _a + 2;
+不然, 依赖的顺序就成了一件烦心的事情
 
 上面说了用特殊语法定义顶级 item...而不是用赋值语句来定义顶级 item, 似乎这样可以打乱定义顺序, 整个程序的初始化都没有副作用一样...
 但其实不要被误导了... 哪怕是用特殊语法定义 item, 程序的初始化肯定仍然是有顺序的, 顶级 item 的循环依赖就能轻松证明这点( struct A<T:B>(a:T); struct B<T:A>(b:T) 像这样, 就顶级 item 循环依赖了, 肯定不行...中间至少加个条件 struct A(a:i32|A) )
@@ -459,6 +502,25 @@ enum!(Gender, (
   Unknown:'U';
 ));
 // ! const 作为类型在 union 中理论上应该是可以不占 flag 的, 运行时变量如果跟 const 值一样, 例如是相同的数字, 需要用运行时 typeguard 来转化类型
+
+enum Color {
+  name(string);
+  rgb(i8,i8,i8);
+  hsl(i8,i8,i8);
+}
+本质上是
+type NameColor = string;
+type RGB = (i8,i8,i8);
+type HSL = (i8,i8,i8);
+type Color = NameColor | RGB | HSL;
+let a: Color = xxx;
+
+match a { // match 相比 if else 最大的区别是 match 必须完整
+  NameColor: xxx;
+  RBG: xxx;
+  HSL: xxx;
+}
+这说明 type 并非类型别名, 不然 RGB 与 HSL 就没区别了
 
 **match / is 到底是什么:**
 首先要确定的是, 就算是 a match const b, 它也不是要求 a 实现 PartialEqual, 把 a 与 b 做运行时比较, 而是要 a 就是 b
@@ -559,6 +621,8 @@ comptime comptime_random = Math.random();
 const const_random = Math.random();
 则 comptime_random 在程序每次运行, 值都是相同的, 因为它的值已经在编译的时候就定下了, 写进了二进制文件中;
 而 const_random 在每次程序重新运行, 值都会变化, 只在程序的一个生命周期内值不变;
+**dart 有 static final 与 const**
+假如说 dart 的 static final 没有内部可变性, 则 const 就是编译期就处理好内存, 之后运行到 const 只是指向内存而已
 
 **rust Sync 不是编译器特例**
 之前以为 rust 的 Sync 啥的是编译器的特例类型...但是仔细想下, 其实不是, 它是 thread 的构造函数要接受的一个普通的 Trait...thread 的构造函数接收一个 闭包结构体, Sync trait 如果所有子元素都 Sync, 那自己就 Sync.... 好吧, 这的确跟通常的 trait 不一样, 通常的 trait 需要自己主动实现, 而 Sync 可以被自动实现, Clone/Copy/PartialEqual 是 derive 实现, 自己下面所有的子元素都实现了 Copy/Clone/PartialEqual, 其实也是主动实现... 需要有多个 trait 的形容词来实现不同种类的 trait, 甚至是一段编译期逻辑去形容 trait...
@@ -704,3 +768,288 @@ typeof e ====== 1
 
 **宏编程**
 宏有好几种宏, 有的只接受个 token list, 自己对 token list 变换... 有的接受个 expression, 能识别 expression 的类型,
+其实宏可以匹配 PEG, 然后提供 PEG rule 是 mylang 本身的... 然后
+macro_content = 'select * from ' mylang ' where ' mylang .... 这样就能根据 peg 得到的东西转换, 也能得到 mylang 部分内部的 ast 和类型信息... macro 就是一个增强语言本身定义的 PEG 规则的东西....
+然后因为都是定义的 PEG, 所以在 macro 内部做代码补全也更轻松
+
+既然总归是有 trait 影响语法的情况出现, 干脆就各种操作符都是 trait, 包括一元操作符... 或者是方法名可以有各种各样, 而且有修饰关键字, 说明此方法是放在哪里的, 例如前置方法, 后置方法, 中置方法 等等..........---- 算了, 还是不要有前置方法, 后置方法啥的, 迷惑性太大... 全都中置方法, 全是二元的...因为参数只有一个, 直接组构和解构而已
+
+_ 用来表达 private, 是关键字后, 还可以用它来表达快捷参数函数,... 而且正好 mylang 的函数只有一个参数, 可以用 _.0  _.a 来取本该是解构出来的值
+
+**可能有懒加载模块**
+所以加载模块是  const abc = import('');  const abc = await import_async('');   不过也可能也可以直接全部都在顶部声明模块依赖, 静态分析哪些可以懒加载, 再加个 关键词 来强制懒加载... 懒加载的模块不能在顶级使用
+模块加载要有加载全部的方法, 而不是所有的地方都通过模块名再去访问内部的东西... 因为 可能依赖 
+
+
+**可变性**
+有两种概念的可变性:
+1. rust 内存版: let mut a = (1, 2); 此时, 可以改变整个指向 a = (3, 4); 也可以改变内部属性的指向 a.0 = 3; ... 其实这里面根本不是改变指向, 而是改变变量对应偏移量所在的栈内存... let mut a = (1, 2); 时, 栈上确实有个 (1, 2), 之后 a = (3, 4); 就把那段内存更改为 (3, 4) 了;... 因为 rust 是真正的改变内存, 所以把整个指向改变与部分改变合并为一种语法在概念上是一样的
+2. kotlin 指向版: val a = (1, 2); 此时, 不可以改变整个指向 a = (3, 4); 但可以改变内部属性 a.0 = 3; 要想改变整个指向, 需要是 var a = (1, 2); 这样看的话, 改变内部属性对应的其实就相当于 val a = (var 1, var 2); ... 于是类似 dart 的 class, 它里面有的成员是 final 不可被改变指向, 有的是普通的 可以被改变指向...
+
+rust版 有优点: 一不改, 整个的都不能改, 于是可以跨线程; 也有缺点: 一改, 整个的都可以改, 不像 dart 的 final 成员, rust 要实现外部可改, 内部不能改的成员, 只能是把成员私有, 再提供个 get 方法返回个不可变借用... 那到底要不要内部 final 呢? 感觉其实不要更好, 首先, 内部 final 是不必要的, 本来就可以不要; 其次, 如果有内部 final 了, 其实就是一个成员是 pub 的, 但不可以 set 它... 这有隐含 getter setter 的概念... 感觉其实比写一个 get 方法返回一个不可变借用要别扭不少...
+
+**mut 属于类型的一部分, 它应该放在哪里?**
+let mut a = (1, 2);
+// 是否允许 写 mut 但不写类型
+let a: mut = (1, 2);
+// 是否使用 _ 表示类型通配符
+let a: mut _ = (1, 2);
+// 或者使用 * 表示类型通配符
+let a: mut * = (1, 2);
+let a: mut (i8, i8) = (1, 2);
+// 是否使用 * 表示 mut --- 这要看 * 在 rust 中表示啥
+let a: * = (1, 2);
+// 是否用 * 表示 mut 的时候, 可以无空格
+let a: *_ = (1, 2);
+let a: *(i8, i8) = (1, 2);
+// 是否可以根本不用 let ... 注意: golang := 声明变量不允许接类型
+a: mut (i8, i8) := (1, 2);
+// 或者不要冒号... golang var 声明变量不用冒号 var a i8 = 8
+a mut (i8, i8) := (1, 2);
+a: *_ = (1, 2);
+
+
+**type 是可 nested 的**
+type A = {
+  a: i8,
+  b: {
+    b0: i16,
+    b1: i32,
+  },
+};
+于是我们可以 let a: A = {a:127,b:{b0:999,b1:99999}} , 也可以 let b: A.b = {b0:999,b1:99999};
+
+
+**type 构造函数**
+之前有想法是 type Person = (name: string, age: u8) => (_id: 123, name, age);
+或者说是 type Ratio = (a: u64, b: u64) => if b == 0 panic!("b must not be 0") else (a, b);
+不过后来实在是觉得这样 type 函数的 参数 可能是 union, 返回值也可能是 union, 太复杂...
+现在想来, 也许可以用 private 来实现 constructor, 并拒绝直接结构体构造...例如: 假设默认是 pub, 用 _ 表示 private
+type Ratio = (_ u64, _ u64);
+const create_ratio = (a: u64, b: u64) => if b == 0 panic!("b must not be 0") else (a, b) as Ratio;
+impl Ratio {
+  const get_a = &self => self.0;
+  const get_b = &self => self.1;
+}
+而且不把它暴露出来, 也不提供 set 方法是有理由的... 暴露出来, 用户就有可能 let mut r = create_ratio(1, 3); r.1 = 0; 这样弄错了...
+set 方法倒是可以提供, 在方法内部判断是否有错... r.set_1(0) 将抛错
+> 仍要仔细考虑 type 函数是否也可以... 感觉 type 函数容易出现 type A = () => (); type A.a = () => (); 
+> 这样让 A.a 看起来 A 是一个对象,而不是一个 type
+> 不用 type 构造函数, type 仍然可以是 union...
+上面错了, 哪怕字段是 private, 但 as 不受 private 约束, 也就是模块外部也可以 (1, 3) as Ratio... 需要给 Ratio 增加个空字段, 让外部无法对齐
+type _phantom = ();
+type Ratio = (_ u64, _ u64, _ _phantom);
+
+......
+> 可能还是 type 声明的类型, 除了自己的模块, 不然不能基础数据 as 到它...也就是说不能把 普通 tuple/struct 传参给需要一个 type 的函数...这样应该能较好的解决封装问题
+
+**模块封装性**
+mod A {
+  type A = xxxx;
+  impl A {
+    const a = () => println!("a");
+    const b = (&self) => println!("b: {}", &self);
+    // 这里还是需要命令式编程, 顺序性的决定 item, 避免出现顶级循环依赖, 例如
+    const a = <T: typeof b>(&self, b: T) => { println!("a"); b(&self); }
+    const b = <T: typeof a>(&self, a: T) => { println!("b"); a(&self); }
+    // 命令式编程中, 上面的写法很容易知道出错, b 未初始化, a 不能用 b... 但声明式编程却有可能写成上面那种错误形式
+    fn a<T: typeof b>(&self, b: T) { println!("a"); b(&self); }
+    fn b<T: typeof a>(&self, a: T) { println!("b"); a(&self); }
+    // 另外 typeof 可以换成 macro: typeof a === typeof!(a)  ... 不能是 type!(a) 因为 type 是关键字
+    // 现在就是静态方法, 和实例方法, pub 和 pri 该怎么写了
+
+  }
+}
+
+let use(./abc) > (abc;); === let (abc;) = use(./abc); === let (abc;) < use(./abc);
+let abc() > a;
+a.some_what();
+abc() > a => a.some_what();    XXXX, 错, 这都不分 大于 和 传入了... 用 |> 或者 -> 都太多字符了, 还不如个工具函数或工具宏 pipe!()...
+
+abc() |> a;
+a.some_what();
+use!(./abc |> rename_abc);
+use!(./abc);
+
+**还是加 pipe**
+pipe 最重要的作用是 **减少命名**... 而且 mylang 中所有的参数本质上只是一个 对象, 所以 pipe 和 call 都非常适合转换
+let print_square_of_x_plus_one = x => x |> _ + 1 |> square |> print
+let print_square_of_x_plus_one = _ |> _ + 1 |> square |> print
+因为如果只是用工具宏 pipe!() 的话, 如果宏只是转换代码的话, pipe!(_, _ + 1, square, print)... 写到 pipe!(_, _+1, sq) 的时候编译器很难做到前置提示, 用 |> 就真正在编译器级别把它转为后置提示了
+
+abc() &> a;   a = &abc();
+// cuocuocuo
+abc() *> a;   a = 
+mut abc() &> a;   a = mut &abc();   *a.xx = xx; / *a = bac();
+abc() &> mut a;   mut a = &abc();   a = &bac();
+
+**文件夹并非模块**
+很多语言里把文件夹都当成一个模块... 然后 文件夹内部的 index 文件或者 lib 文件作为模块内容... 感觉很琐碎, 容易出错...
+而且 rust 的 feature 方式来条件编译, 很麻烦...还不如不同的 entry point 达到不同的编译内容...条件编译也可以, 很灵活, 但是不应被鼓励, 会造成代码太乱...
+于是因为有不同的 entry point, 所以也不该有 index 文件...应手动指定 entry...
+于是 "文件夹不是模块" 就理所应当
+例如有
+tmp
+├── a.rs
+├── b
+│  ├── b.rs
+│  └── bb.rs
+└── b.rs
+则 a.rs 里 use b/b;
+如果 b/b.rs 里有 pub mod bbb {}... 则 use b/b::bbb;
+再考虑上 相对路径, 绝对路径, 还有本模块所在文件内部其他模块...
+```rust
+// a.rs
+use ./b;
+use ./b/b;
+use ./b/bb;
+use ./b/b:bbb;
+mod a {
+  // 两个 : 表名到上一层
+  use ::b;
+  mod c {
+    // 三个 : 表明取当前文件顶层
+    use :::b;
+  }
+}
+mod b {}
+// todo: 上面那么多引入会引发重名错误, 但意思表达到了
+```
+文件夹不是模块, 文件才是模块... 文件夹只是文件的名字的一部分...只是个路径而已...文件内部也有写在该文件内的模块, 文件内还可以 pub 其他文件模块
+
+可能另一种方法更符合直觉...不区分文件夹/文件/模块... 只是查找顺序的不同而已...或者发现有相同的引用可能就报错...这样则是先查模块, 查不到就查文件, 查不到就查文件夹
+```rust
+// 引入 abc 这个包, 而 abc 的名字来源于 package.json 里定好的  abc: uuid@version
+// abc 是一个包名... 包只是一个文件夹... 里面有 package.json, 有设置 main 入口
+use abc;
+// 引入当前文件所在目录里的 abc 文件[夹]模块
+use ./abc;
+// 引入电脑 根目录下 abc 文件[夹]模块
+use /abc;
+// 如果有上级模块的兄弟模块叫 abc, 就引入那个模块, 没有就引入上级目录下的 abc 文件模块...即
+// mod x { use ../abc; }; mod abc {};... 其实只要简单的要求文件与文件夹不重名就够了, 重名直接报编译错误
+use ../abc;
+```
+mod 要做好 normalize
+
+
+实测 umi-request@1.2.11 会消耗 非 200 的响应, 例如 401... 而且明明已经消耗了, 却仍然报错, 如果状态码不在 200-300 之间... 
+https://github.com/umijs/umi-request/blob/master/src/middleware/parseResponse.js#L60-L69
+
+个人感觉, 如果要报错, 那就早点报, 也干脆不要 parseJSON 了, 如果要 parseJSON, 也不要动原 res, 只动 copy res...所有 middleware 的设计原则都是: 预设 ctx 上有什么东西, 以只读的方式去读取他们, 产生结果, 把结果放到 ctx 上
+
+
+**contracts**
+https://dlang.org/spec/contracts.html
+https://softwareengineering.stackexchange.com/questions/229972/what-is-the-difference-between-dependent-typing-and-contracts
+
+
+**generator**
+闭包是个匿名结构体, generator 其实也是个结构体, 并且内部有很多函数和状态, 例如:
+```js
+function abc*() {
+  let a = 0;
+  let b = null;
+  while(true) {
+    b = yield a++;
+    console.log(b);
+  }
+}
+```
+这个 generator 相当于一个:
+```js
+class Generator_abc {
+  a=0;
+  b=null;
+  // 差不多是这个意思
+  next(_b) {
+    b = _b;
+    console.log(b);
+    return a++;
+  }
+}
+```
+然后 generator 有不方便的地方是: 它只能顺序执行, 不能后续的 next 调用让 generator 的运行状态换位置... 造成的后果是: 
+https://www.zhihu.com/question/388457689/answer/1165782397 ... react 为了能随时暂停和重启, 甚至选另一个位置重启 diff 过程, 做了 fiber...而 crank 把调度留给 generator 去表达, 就不能做到 "选另一个位置开始" 的逻辑...
+generator本身已经可以 **多进多出**, 但如果它还可以 **多进多出任意位置进**, 就更爽了:
+```ts
+function abc*() {
+  let a: int = yield:x 1;
+  let b: string = yield:y 2;
+  console.log(a, b);
+}
+let g = abc()
+assert(g.value === 1);
+// g.x("abc"); wrong type 这里是 x,y 方法的参数类型取决于 a, b 的类型, 所以 a,b 应该强制声明类型, 如果没有, 则认为是 yield 的原值类型
+g.x(10);
+g.y("abc"); // log: 10 abc
+// 除了可以 x, y 以外, 还可以 next, 但 next 的值类型就还没搞清楚
+```
+这样, 它本质就是:
+```ts
+class Generator_abc {
+  a: int;
+  b: string;
+  x(_a: int) {
+    a = _a;
+  };
+  y(_b: string) {
+    b = _b;
+    console.log(a, b);
+  };
+}
+```
+个人认为 generator yield 带名字的, 是函数, yield 不带名字的, 是 next; next 的不能作为右值(因为)... 
+~~next 的会跳过 yield 带名字的, 而且那会把 yield 的值本身作为右值~~
+next 不会跳过 yield 带名字的, 而是调用 next 无效, 另外, 上一次调用 next 得到的 结果中, 有函数 x/y.... { x: (a:int)=>xxx }
+
+
+**条件类型你尽管定义，能实现算我输😁**
+let a: 0..8 = 1; // ok
+let b: 0..8 = a + 1; // not ok, 因为 a 是 0..8, 再加 1 有可能溢出
+let c: 1..9 = a + 1; // ok
+0..8 这个类型与 0|1|2|3|4|5|6|7 类似, 但本质不同
+它本质上是一个 const 无序集合, 即:
+const T = 0..8;
+let a: T = 1;
+0..8 与 0|1|2|3|4|5|6|7 的不同是:
+0..8 只是一个类型描述信息, 只存在于编译器的运行时中... let a: 0..8 = 1; a 只占一个字节
+0|1|2|3|4|5|6|7 是一个 union 类型，union 的部分在编译后的程序的运行时中仍然存在，占两个字节，一个类字节，一个值字节
+甚至可能有 0|1|2|3...|255|256... 300  ... 300 > 255, 于是这里, 光 union 的类字节就占 2 个。。。
+而 let a: 0..8 甚至可以有 let a: 0..Infinite
+... 这里 0..8 只是数字可用的定义常量集合的语法。。。用这种语法定义出的常量集合 拥有在编译期与运行期都可用的转换函数。。。
+let a: 0..8 = 1; // 这就是编译期把 const 1 转为 0..8
+let b: 1..9 = a + 1; // 这就是编译期把 0..8 + const 1 确定可以转为 1..9
+if (some_num match 0..8) // 这就是编译期确定 some_num 必须在 i8 范围, 且 >=0, <8 ... 
+然后编译期确定 i8 又导致编译期确定 i16 ... 意思是 if (some_i16 match i8) ... 理论上可以升级至 所有的 match (match 是可选的，as 是强迫的), 但也可以编译期加一定的范围，例如至少编译期确定 some_num 至少是个 num ，而不是 string。。。。不过想想，编译期不做限制也没啥
+
+另外, 0|1|2|3|i8 这种是否可以。。。
+如果可以，意味着 union 类型是有顺序的，编译期给值赋类型时，从前到后。。。如
+let a: 0|1|2|3|i8 = 1;
+编译期给类型 0|1|2|3|i8 类型分 2 个字节:
+第一个字节是类字节, 0x00 是 const 0, 0x01 是 1 ... 0x03 是 3, 0x04 是 i8;
+第二个字节是值字节. 于是 a 的内存是 0x0101. 
+如果是 let b: i8|3|2|1|0= 1; 则 b 的内存是 0x0001 ... i8 后面的 3|2|1 永远不会用到.., 编译器可以做优化, 但那是编译器的优化模式, 而严格照代码编译的模式不管这些
+如果 union 是有顺序的, 则 union 的 union 是不能合并的... 
+因为如果能合并, 则 (i8|i16|i32) | (i16|i32|i64)  === i8|i16|i32|i64 ... 但 (i8|i16|i32) | (i32|i16|i64) 合并是啥 ...
+不能合并的话 (i8|i16|i32) | (i32|i16|i64) 的类字节就要占 2 个字节...
+
+... 不对, 如果是有顺序, 就更是能够合并的, 因为 (i8|i16|i32) | (i32|i16|i64) 中, (i8|i16|i32) 造成了 (i32|i16|i64) 中的 i32|i16 永远不存在
+而合并的话, i32|i16 === i32.... 那其实也有 i8|3|2|1|0 === i8
+
+则 union 类型, 1: 前面的类不可包含后面的类型; 2: union 与 union 的 再 union 会 flat, 并把后面的被包含的类型抹去
+
+union 类型的值, 会被编译成一个结构体 {type:int,value:buffer} ... 然后使用其值,都是先判断 type 再根据 type 本身的内存结构去使用 value
+
+
+**关键字重用**
+import 'http' as http;   let a = b as i32; 这两处 as 是完全不同的用法, 但这里做关键字重用
+array.map(_ + 1); array.reduce(_ + _1, 0); array.reduce(_0 + _1, 0);  ---- 不, 还是不用 _ 作为占位符, 因为 _ 可以作为 标识符... 
+也许 $ 作为标识符更好(java, js, php, perl)都支持 $ 作为标识符, 且 $ 只能做开头, 用作占位符正合适
+array.map($ + 1);
+array.reduce(0, $ + $1);
+array.reduce(0, $0 + $1);
+$ 与 $0 代表第 0 个参数, $1 代表 第1个参数....
+....错了... 按之前的想法, 无论怎样的函数, 必定有且只有一个函数, 剩下的是模式匹配做参数解构... 所以用 _ 做占位符也合适, 可以规定单独的 _ 不能作为标识符, 于是:
+array.map(_ + 1); array.reduce(0, _.0 + _.1); 点语法后接数字是取 tuple 内容的语法, rust 就这样... 
+tuple 本身使用没比 dict 方便, 都是点语法, 只是 tuple 不需要想名字... 所有, 既是 tuple,又是 dict 是没必要的, 因为既然能想名字,就没必要用 tuple

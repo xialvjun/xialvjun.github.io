@@ -434,6 +434,7 @@ all_books 只查一次, user.books 要先查 user 后查 books
 1. 普通的数据库锁: select for update / for share 
 2. 乐观锁: 取数据的时候, 顺带取一个表示当前数据的状态的一个值(通常是版本号), 之后更新数据的时候, where 语句中判断这个值有没有发生变化. 这里可以是更新库存的时候, where 语句中带上 update product set stock=new_stock where id=id and stock=old_stock... 这样, 如果更新行数小于 1, 则 rollback. 另外, 这句 update 语句必须是事务的最后一行(todo: 事务到底做了什么), 不然, 等它再过一段时间再提交事务, 那那段时间中可能发生超卖
 优缺点: 方式 1 是有的数据库不支持行锁, 只支持表锁, 于是降低并发...如果支持行锁, 那就最好(postgres支持行锁). 方式 2 是当并发较高的时候, 会经常发生 rollback, 用户经常收到报错, 还不如老老实实用锁, 用户多等一下.
+https://my.oschina.net/liuyuanyuangogo/blog/499460
 
 add, set, del - get
 insert, update, delete - select
@@ -827,3 +828,410 @@ https://www.google.com.hk/search?newwindow=1&safe=strict&ei=eU0oXZ_mDNCWr7wP4fiO
 好吧, 已经有很好的工具了 [Workona - Tab Manager & Productivity App](https://chrome.google.com/webstore/detail/workona-tab-manager-produ/ailcmbgekjpnablpdkmaaccecekgdhlh)
 
 有个收藏夹搜索插件 [Bookmark Manager Plus](https://chrome.google.com/webstore/detail/bookmark-manager-plus/pfbeenngglcojppheoegjjjomfkejibg) 还行
+
+
+/***
+ * ┌───┐   ┌───┬───┬───┬───┐ ┌───┬───┬───┬───┐ ┌───┬───┬───┬───┐ ┌───┬───┬───┐
+ * │Esc│   │ F1│ F2│ F3│ F4│ │ F5│ F6│ F7│ F8│ │ F9│F10│F11│F12│ │P/S│S L│P/B│  ┌┐    ┌┐    ┌┐
+ * └───┘   └───┴───┴───┴───┘ └───┴───┴───┴───┘ └───┴───┴───┴───┘ └───┴───┴───┘  └┘    └┘    └┘
+ * ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───────┐ ┌───┬───┬───┐ ┌───┬───┬───┬───┐
+ * │~ `│! 1│@ 2│# 3│$ 4│% 5│^ 6│& 7│* 8│( 9│) 0│_ -│+ =│ BacSp │ │Ins│Hom│PUp│ │N L│ / │ * │ - │
+ * ├───┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─────┤ ├───┼───┼───┤ ├───┼───┼───┼───┤
+ * │ Tab │ Q │ W │ E │ R │ T │ Y │ U │ I │ O │ P │{ [│} ]│ | \ │ │Del│End│PDn│ │ 7 │ 8 │ 9 │   │
+ * ├─────┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴─────┤ └───┴───┴───┘ ├───┼───┼───┤ + │
+ * │ Caps │ A │ S │ D │ F │ G │ H │ J │ K │ L │: ;│" '│ Enter  │               │ 4 │ 5 │ 6 │   │
+ * ├──────┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴────────┤     ┌───┐     ├───┼───┼───┼───┤
+ * │ Shift  │ Z │ X │ C │ V │ B │ N │ M │< ,│> .│? /│  Shift   │     │ ↑ │     │ 1 │ 2 │ 3 │   │
+ * ├─────┬──┴─┬─┴──┬┴───┴───┴───┴───┴───┴──┬┴───┼───┴┬────┬────┤ ┌───┼───┼───┐ ├───┴───┼───┤ E││
+ * │ Ctrl│    │Alt │         Space         │ Alt│    │    │Ctrl│ │ ← │ ↓ │ → │ │   0   │ . │←─┘│
+ * └─────┴────┴────┴───────────────────────┴────┴────┴────┴────┘ └───┴───┴───┘ └───────┴───┴───┘
+ */
+
+
+**for await(let a of b){}  vs for(let a of b) {await a}**
+```ts
+var delay = (ms) => new Promise(res => setTimeout(res, ms))
+async function* abc(n) {
+    let i = 0;
+    while (i < n) {
+        yield i++;
+        await delay(1000);
+    }
+}
+async function main() {
+    for await (let b of abc(10)) {
+        console.log(b);
+    }
+    // ! 下面的直接报错... 因为一开始根本不知道 stream 内有多少个元素, 所以如果 for 里面没 await, 那就无限个了...其实感觉无限个也没啥
+    for (let a of abc(10)) {
+        let b = await a;
+        console.log(b);
+    }
+}
+```
+**Dart Sync Generator and Async Generator**
+假设说 for(let a of abc(10)) {await a} 语法可以的话... 那 Sync Generator 就可以任意 for of, 而 Async Generator 则要求 for of 内部必须 await a, 不然会阻塞死线程, 并且生成无限 future, 这其实是不对的, 也就是说 for(let a of abc(10)) {await a} 语法根本不应该成立, 它让语法使用者觉得 不 await a 也没问题, 但实际 不 await a 是有问题的...所以他们是不同的东西, 使用不同的语法, 当然也是不同的类型
+
+
+**量子猫**
+所有在你之前观测了猫的人都处于纠缠态, 你在观测了其中一个人之后, 就能知道所有人看到的猫的死活, 换句话说就是加入你看到猫死了, 那你就能知道你的朋友 A 是一个看到了死猫的 A, 纠缠态崩塌
+
+
+**html 5 viewport**
+```html
+<meta name='viewport' content='width=design_width, user-scale=no'>
+```
+
+**DI: 依赖注入**
+```ts
+class A {
+  constructor(this.a: string)
+  do_a() {
+    console.log('a: ', this.a);
+  }
+}
+class B {
+  constructor(this.b: number)
+  do_b() {
+    console.log('b: ', this.b);
+  }
+}
+class C {
+  constructor(this.a: A, this.b: B);
+  do_c() {
+    this.a.do_a();
+    this.b.do_b();
+    console.log('c'); 
+  }
+}
+
+// other logic code
+const c = new C(new A('a'), new B(0));
+c.do_c()
+```
+上述的代码是有必要的, A 处理 A 的事情, 所以它有自己的成员变量和成员方法, B 也一样. C 是对 A,B 功能的组合, 它可以是传 A,B 的实例给自己, 也可以是直接在自己的 constructor 里创建 A,B, 但显然, 后者的话, 就让 A,B 的创建逻辑侵入了 C 的创建逻辑, 即 C 的构造参数要包括 A,B 的构造参数, 这会级数层级增长, 显然是不合适的.
+所以, C 只应该是只接受 A,B 实例... 然后, 假设要增加 C 的功能(因为 C 是其他类的功能的组合, 那其实就应该能增加更多的类, 而不是只限定为 A,B 两个类), 需要在 C 的 constructor 上增加 `(this.d: D)` 参数, 则所有的下面的 logic code 有 `new C(new A('a'), new B(0))`, 都要变为 `new C(new A('a'), new B(0), new D(d))`, 哪怕那些 logic code 跟 D 一点关系都没有, 本质上那些 logic code 只是需要 C, 但不需要全部的 C...
+所以 DI 框架 `const c = Context.getInstance(C)` 就应运而生. 然后对于有些目的不同而参数不同的实例, 可以有 `const c = Context.getInstance(C, 'purpose')`, `purpose` 对内又级联影响了 A,B,D 的创建和缓存...
+> 其实 DI 本身是面向对象的自有问题. 事实上, C 只是一系列功能的组合, 它本不应成为一个单独的对象, 它的功能本身就是零散的, 至少, 按上面说的需求里, A,B 与 D 没有结合到一块...
+> `do_c` 应是一个顶级函数, 而非 C 的成员函数... 然后在调用 do_c 的逻辑代码中, 需要由那逻辑代码去创建 A,B 事实上也确实应该由那段逻辑代码创建, 因为那逻辑代码的业务与 A,B 相关. 而且往往在调用 do_c 之前, A,B 就已经被创建, 在作用域里面了... 然后 `do_c(a, b)`
+> 其实 DI 准确说只是一个全局 Bean 管理模式, 就跟 全局状态管理 Redux 一样
+
+
+**编程中的 设计与编写**
+编程 就像 画画. 
+css是设计，style是元信息。。。我们画牛也是设计个骨架后，填充大量的元信息。。。不能把元信息填充进设计里复杂了设计，也不能只给用户提供个设计。
+样式是如此，组件化编程也是如此。
+
+
+**gls**
+Component design tip: padding can be used in any component that has an explict visually designed border (e.g buttons).
+只给有明显边界的元素加 padding... 例如一个具体的 layout, 一个 button...但是对于一段话 p, 它其实是没有明显边界的
+
+**graphql ppt**
+alias
+client batch_query - server support
+
+
+**typesafe sql: ddl and dql**
+```ts
+const db = connect(connection_string);
+{
+  const schema = new PostgresSchema();
+  const users_table = schema.table('users');
+  const users_table_id_column = users_table.column('id', 'uuid');
+  users_table.column('name', 'varchar');
+  users_table.primary(users_table_id_column);
+
+  const rooms_table = schema.table('rooms', tb => {
+    const id_col = tb.column('id', 'uuid');
+    tb.column('name', 'varchar');
+    tb.primary(id_col);
+  });
+
+  const user_room_table = schema.table('user_room', tb => {
+    const uid_col = tb.column('user_id', 'uuid').foreign(users_table_id_column);
+    const rid_col = tb.column('room_id', 'uuid').foreign(rooms_table.columns['id']);
+    tb.primary('user_id', 'room_id');
+    tb.primary(tb.columns['user_id'], tb.columns['room_id']);
+    tb.primary(uid_col, rid_col);
+  });
+
+  db.sync(schema).then(_ => {});
+}
+
+db.create_table('')
+
+db.generate_code('./db.ts');
+
+// other_file.ts
+import connect from './db.ts';
+const db = connect(connection_string);
+from(db.users).left_join(db.user_room, db.user_room.user_id.equal(db.users.id)).select(db.users.$all);
+```
+
+
+**better than smox**
+```ts
+const dux = Dux({
+  state: { g_count: 0 },
+  actions: {
+    up(s) {
+      s.g_count += 1;
+    }
+  },
+  effects: {
+    async aup(actions) {
+      await delay(1000);
+      actions.up();
+    }
+  },
+  children: {
+    s_count: {
+      state: { s_count: 0 },
+      actions: {
+        up(s) {
+          s.s_count += 1;
+        }
+      },
+      effects: {
+        async aup(actions) {
+          await delay(1000);
+          actions.up();
+        }
+      },
+    }
+  }
+})
+
+dux.parent === null;
+dux.state;
+dux.actions;
+dux.effects;
+dux.children.s_count;
+dux.children.s_count.state;
+dux.children.s_count.actions;
+dux.children.s_count.effects;
+
+dux.children.dyn_module = {};
+dux.actions.dyn_action = function(){};
+
+dux.module('s_count.a.b.c');
+```
+
+
+**graphql split**
+```graphql
+#import "./UserInfoFragment.graphql"
+
+query CurrentUserForLayout {
+  currentUser {
+    ...UserInfo
+  }
+}
+```
+
+
+**Code should be beautiful in logic, not in graphic.**
+Code should be beautiful in logic, not in graphic. There are so many stupid persons think it in graphic and keep telling others that code like theirs is beautiful. Code should be beautiful in logic means: 上帝的归上帝, 撒旦的归撒旦.
+
+**代码该在哪儿就在哪儿, 那才是好代码... 也就是说: 上帝的归上帝, 撒旦的归撒旦.**
+命令式编程与声明式编程能灵活结合的方法就能更好的实现上面的目标. 
+jsx 就把声明式编程与命令式编程灵活结合 (声明 vdom, 命令式事件代码)
+函数回调 就是声明回调, 命令式回调内容... 但是异步回调之所以被诟病, 本质上是因为在业务逻辑上它是同步的, 仅仅只在机器执行上是异步的. 对于业务逻辑本身就是声明式的, 函数回调就非常合适了, 例如 http_server_handler... 虽然机器执行上可以  for await (const req of server.listen()) ... 但根本不会有人这样写, 这样的代码根本就没有 server.listen().on_request(req => {}) 来得清晰
+
+**基于规则的晋升**
+意淫到自己未来是个大富翁, 请了一大堆老师编写出我喜欢的教材, 然后自己面对那些教材, 会有自己的想法: 为什么不这样那样写? 然后会去骂那些老师, 而骂他们会让他们更战战兢兢, 也不能判断出我的喜好. 所以应该是发现自己喜欢的教材, 就提升老师的排名. 自己有某种想法, 就让老师根据那种想法写教材, 然后自己选一个作为最佳, 并提升其排名...
+可以用这种思路构建在线教育...众多老师你一篇文章, 我一篇文章一块集合成一本教材, 学生看教材, 对每篇文章评分.
+
+**不讨论爱情, 它太模糊**
+只讨论道德(大爱)和特殊性(对某个人要比其他人特殊). 有的人有道德却没特殊性, 例如高僧, 有的人有特殊性却没道德(这样不一定就对那个特殊的人好)
+
+**myself promise**
+```ts
+function exec_p(p: P<any, any>) {
+  if (p.status === 1) {
+    const then_list = p.then_list;
+    p.then_list = [];
+    then_list.map(({ res, rej, on_res, on_rej }) => {
+      try {
+        res(on_res(p.value));
+      } catch (error) {
+        rej(error);
+      }
+    });
+  }
+  if (p.status === 2) {
+    let catched = false;
+    const catch_list = p.catch_list;
+    p.catch_list = [];
+    catch_list.map(({ res, rej, on_rej }) => {
+      try {
+        catched = true;
+        res(on_rej(p.error));
+      } catch (error) {
+        rej(error);
+      }
+    });
+    const then_list = p.then_list;
+    p.then_list = [];
+    then_list.map(({ res, rej, on_res, on_rej }) => {
+      try {
+        if (on_rej) {
+          catched = true;
+          res(on_rej(p.error));
+        }
+      } catch (error) {
+        rej(error);
+      }
+    });
+    if (!catched) {
+      throw p.error;
+    }
+  }
+}
+
+class P<V, E> {
+  static resolve<V>(v: V) {
+    return new P<V, undefined>(res => res(v));
+  }
+  static reject<E>(e: E) {
+    return new P<undefined, E>((_, rej) => rej(e));
+  }
+  status: 0 | 1 | 2 = 0;
+  value: V = undefined as any;
+  error: E = undefined as any;
+  constructor(fn: (res: (v: V) => void, rej: (e: E) => void) => void) {
+    const res = (v: V) => {
+      if (!(v instanceof P)) {
+        this.status = 1;
+        this.value = v;
+        exec_p(this);
+        return;
+      }
+      v.then(nv => res(nv), ne => rej(ne as any));
+    };
+    const rej = (e: E) => {
+      if (!(e instanceof P)) {
+        this.status = 2;
+        this.error = e;
+        exec_p(this);
+        return;
+      }
+      e.then(ne => rej(ne), ne => rej(ne as any));
+    };
+    fn(res, rej);
+  }
+  then_list = [] as any[];
+  then<FV extends (v: V) => any, FE extends (e: E) => any>(on_res: FV, on_rej?: FE) {
+    let p = new P((res, rej) => this.then_list.push({ res, rej, on_res, on_rej }));
+    exec_p(this);
+    return p;
+  }
+  catch_list = [] as any[];
+  catch<FE extends (e: E) => any>(on_rej: FE) {
+    let p = new P((res, rej) => this.catch_list.push({ res, rej, on_rej }));
+    exec_p(this);
+    return p;
+  }
+}
+
+(async function() {
+  console.log(0);
+  await new P(res => setTimeout(res, 1000));
+  console.log(1);
+  await new P(res => setTimeout(res, 1000));
+  console.log(1);
+  await new P(res => setTimeout(res, 1000));
+  console.log(1);
+  var p = new P((res, rej) => setTimeout(() => rej(2000), 2000));
+  p.then(_ => console.log('then')).catch(e => console.log('catch', e));
+  p.catch(e => console.log('ccc', e));
+  try {
+    await new P((res, rej) => setTimeout(() => rej(2000), 2000));
+    // todo 这个 3000 不应该显示, 但现在还显示着
+    console.log(3000);
+  } catch (e) {
+    console.log(e);
+  }
+})();
+```
+
+
+**为 react事件函数内显示的 vdom 附加状态**
+```jsx
+function() {
+  const [name, set_name] =  useState('');
+  const ref = useRef();
+  return <div>
+    <input value={name} onChange={e => set_name(e.target.value)} />
+    <button onClick={_ => {
+      console.log(name);
+      Modal.confirm({
+        title: 'set_age',
+        content: <State ref={ref} initial={''}>
+          {([age, set_age]) => <div>
+            <input value={age} onChange={e => set_age(e.target.value)} />
+            <span>这里必须用受控组件, 不然无法实现同步显示 age 的效果 {age}</span>
+          </div>}
+        </State>,
+        onOK: () => {
+          console.log(name, ref.current.state);
+          // ! 但这里要注意一点, 在显示这个 Modal 的过程中, 如果别的地方修改了 name, modal 中显示的 name 是不会被刷新的, 这里 onOK 的 name 也是旧的
+          // 而且更不可以在 Modal 里调用 set_name
+        }
+      });
+    }}>set_age</button>
+  </div>
+}
+
+// 其实还有更简单的.
+const Hooks = ({children}) => children();
+Modal.confirm({
+  content: <Hooks>
+    {() => {
+      const [] = useState('');
+      return <div />
+    }}
+  </Hooks>
+})
+```
+
+**大中台，还是大忽悠？！**
+https://zhuanlan.zhihu.com/p/95313644
+夏吕俊 刚刚
+我对文章的理解是: 大中台是公司在发展过程中出现多条业务线, 产生许多互不关联的后端系统, 业务线没有整合, 不能满足运营人员把业务线整合推销给用户的运营需求, 于是出现所谓的大中台, 去整合统一所有后端系统的接口和数据, 从而满足快速变化的前端需求, 继而满足运营和产品的想法... 其实从技术层面, 就是重构后端, 合并系统.... 不知道我对文章的理解有没有出错? 艾特作者.
+
+
+https://www.zhihu.com/question/283762516/answer/826001147 我知道内卷跟资本主义没啥关系. 但是"易被替代"在gc主义下其实并不是个严重问题, 在资本主义下才显得非常严重, 它也是造成大家疯狂内卷的原因之一. 说到底, "易被替代"不能成为原罪. 全社会每个人都要做到不被替代, 不可能的.
+
+
+<!-- 我的学习之路... 
+后端(java)? flutter? rust? -->
+
+
+https://www.cnblogs.com/qing-5/p/11126524.html
+https://blog.csdn.net/jyt11112/article/details/72770090
+https://blog.csdn.net/qq_22881435/article/details/88972958
+https://segmentfault.com/a/1190000013069516 BFC(Block Formatting Context)：块级格式化上下文。
+https://zhuanlan.zhihu.com/p/70949908
+
+
+**短 ID**
+https://github.com/cryptocoinjs/base-x 可以先生成几个字节的随机数据, 然后用 base32 / z-base32 / base58 转成字符串...至于唯一性就由数据库保证
+短 ID 用作 user_id, username 可以是任何字符, 只要不重复就行, 这样就不需要昵称了(本身可重复的昵称这一概念并不好用)... 系统会清除僵尸用户 username, 以释放靓名. 清除 username 时会备份至用户的一个字段里, 用作以后用户记起来, 想登录用
+
+
+**幂等**
+做聊天室, 用户发消息, 可能一时没有返回, 于是连续按发送... 可以让客户端生成个 消息顺序(这里没必要客户端定义整个id), 消息顺序和内容都相同时, 就当成一条消息
+还是带时间戳最好, 可以单用户多客户端登录, 有的接口以最后的时间戳为准...如果只是 int 顺序, 则无法多客户端登录
+
+
+**kuber8s -> minio ...**
+
+**seo**
+有两种方式
+1: 直接做 spa, 完全不考虑 seo... 之后每晚定时跑无头浏览器脚本, 生成页面 html,存储起来...然后 nginx 判断 user-agent 头看是爬虫还是别的, 是爬虫就导向静态文件
+2: 做个无样式的 gatsby, 定时跑生成 html
+/abc?n=1  和 /abc?n=2 爬虫会把他们识别为 2 个页面... 但是之后根据这请求, 导向对应的 html 就要 nginx 做 rewrite 了
+hash className 不适合 seo, 需要语义 html tag 和 className... 可以加 无意义的语义 className
+ 记得 head 里加 seo meta
