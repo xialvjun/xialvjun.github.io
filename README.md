@@ -15,15 +15,17 @@
  - Github: [http://github.com/xialvjun](http://github.com/xialvjun)
  - 现居住城市：北京
  - 熟悉语言：javascript
- - 熟悉技能：react, graphql(server and client)
+ - 熟悉技能：react, vue, graphql(server and client)
 
 ---
 
 ## 开源项目
- - ❤️[ts-sql-plugin](https://github.com/xialvjun/ts-sql-plugin) : 在服务端 TypeScript 代码中用模板字符串直写 sql 语句, 通过获取代码语法树和变量类型, 组装出假的 sql 语句, 在真实数据库中 explain 来校验正确性。提供 LanguageServicePlugin 和 CLI 程序的用法。链接：[https://github.com/xialvjun/ts-sql-plugin](https://github.com/xialvjun/ts-sql-plugin)
- - ❤️[stack-switch](http://github.com/xialvjun/stack-switch) : 通过缓存变化的 location ，给 react-router 带来 keep-alive 功能，从而轻易地让移动端在后退时恢复前进前的状态。链接：[http://github.com/xialvjun/stack-switch](http://github.com/xialvjun/stack-switch)
- - ❤️[create-react-style](http://github.com/xialvjun/create-react-style) : 在 react 中渲染 style 标签，通过简单的方式带来 scoped style 功能，另附带一个 babel macro，删除 css-in-js 中的多余空格，减小打包体积。链接：[http://github.com/xialvjun/create-react-style](http://github.com/xialvjun/create-react-style)
- - [react-element](http://github.com/xialvjun/react-element) : 直接在 JSX 内部使用 React.Component API, 适用于创建一些只有简单逻辑的组件。另外提供一个 `genc` 工具函数，提供比 `react hooks` 更通用的使用体验。链接：[http://github.com/xialvjun/react-element](http://github.com/xialvjun/react-element)
+ - [mobx-loading](https://github.com/xialvjun/mobx-loading) : 类型安全地为 mobx 的 action 添加 loading 状态。
+ - [farrow-apollo-server](https://github.com/xialvjun/apollo-server-farrow) : 一个不错的后端框架 farrow 的 apollo graphql 适配。
+ - [ts-sql-plugin](https://github.com/xialvjun/ts-sql-plugin) : 在服务端 TypeScript 代码中用模板字符串直写 sql 语句, 通过获取代码语法树和变量类型, 组装出假的 sql 语句, 在真实数据库中 explain 来校验正确性。提供 LanguageServicePlugin 和 CLI 程序的用法。链接：[https://github.com/xialvjun/ts-sql-plugin](https://github.com/xialvjun/ts-sql-plugin)。不再推荐，推荐使用 `ts-sql-query / @ff00ff/mammoth / pgtyped`。
+ - [stack-switch](http://github.com/xialvjun/stack-switch) : 通过缓存变化的 location ，给 react-router 带来 keep-alive 功能，从而轻易地让移动端在后退时恢复前进前的状态。链接：[http://github.com/xialvjun/stack-switch](http://github.com/xialvjun/stack-switch)
+ - [create-react-style](http://github.com/xialvjun/create-react-style) : 在 react 中渲染 style 标签，通过简单的方式带来 scoped style 功能，另附带一个 babel macro，删除 css-in-js 中的多余空格，减小打包体积。链接：[http://github.com/xialvjun/create-react-style](http://github.com/xialvjun/create-react-style)。不再推荐，推荐使用 `tailwindcss + atomic css`。
+ - [react-element](http://github.com/xialvjun/react-element) : 直接在 JSX 内部使用 React.Component API, 适用于创建一些只有简单逻辑的组件。另外提供一个 `genc` 工具函数，提供比 `react hooks` 更通用的使用体验。链接：[http://github.com/xialvjun/react-element](http://github.com/xialvjun/react-element)
  - [react-fetcher](https://github.com/xialvjun/react-fetcher) : 在 react 中声明式的获取数据，类似 apollo-client 的 Query。链接：[https://github.com/xialvjun/react-fetcher](https://github.com/xialvjun/react-fetcher)
  - [rx-domh](http://github.com/xialvjun/rx-domh) : 使用 jsx 直接生成真实 DOM，并把 rxjs 的 Observable 精确绑定到真实 DOM 上去。链接：[http://github.com/xialvjun/rx-domh](http://github.com/xialvjun/rx-domh)
  - [tiny-graphql-client](http://github.com/xialvjun/tiny-graphql-client) : 抽象出 graphql-client 的通用接口，相当于一个简易版的 apollo-link，而且适用于微信小程序。链接：[http://github.com/xialvjun/tiny-graphql-client](http://github.com/xialvjun/tiny-graphql-client)

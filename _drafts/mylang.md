@@ -312,6 +312,7 @@ dict: (a: a, b: b, c: c)
 no mix: (a, b: b1, c) is a dict which can be extract from a dict or construct to a dict
 tuple with dict: (a, b, (a: a, b: b))
 不行, 如果 tuple 与 dict 都用小括号, 那很容易出乱子, 例如: fn hello(a, b, c) {} 这里参数 (a, b, c) 原本是准备对一个 tuple 解构, 然后偏偏函数调用那边原本是 hello(get_x(), get_y(), get_z()) 正常, 突然重构 let (b, a, c) = (get_x(), get_y(), get_z()), 然后 hello(b, a, c) 那这里 (b, a, c) 到底是 dict 还是 tuple... **所以必须区分 tuple 与 dict**, 可以 () 是 dict, [] 是 tuple... () 是 dict 可以鼓励大家使用 dict 作为参数...
+**也许可以都用 () 来表示 tuple 和 dict, 只看中间的符号是分号还是逗号, 分号就是 dict, 逗号就是 tuple... 只有单个元素, 就 expose 出来**
 其实也可以是 (a,b,c) 是 tuple (a;b;c) 是 dict... 这个应该更好... 这种情况下是 只有一个元素的dict/tuple 都不该存在(虽然可以存在 (a,)/(a;), 但没有意义), 零个元素的dict/tuple是一回事,都是 none
 [] is tuple: [a, , c] === [a, null, c]
 () is dict
@@ -1053,3 +1054,458 @@ $ 与 $0 代表第 0 个参数, $1 代表 第1个参数....
 ....错了... 按之前的想法, 无论怎样的函数, 必定有且只有一个函数, 剩下的是模式匹配做参数解构... 所以用 _ 做占位符也合适, 可以规定单独的 _ 不能作为标识符, 于是:
 array.map(_ + 1); array.reduce(0, _.0 + _.1); 点语法后接数字是取 tuple 内容的语法, rust 就这样... 
 tuple 本身使用没比 dict 方便, 都是点语法, 只是 tuple 不需要想名字... 所有, 既是 tuple,又是 dict 是没必要的, 因为既然能想名字,就没必要用 tuple
+
+
+**macro**
+macro abc {
+  // lisp code
+  // 可调用 命令行 程序进行副作用调用...
+  // 命令行程序来自于 安装包时 自动安装, 类似 node_modules/.bin 命令行程序 名字带包版本号, 可用 semver 匹配
+  (PEG => PEG)*n;
+  (PEG => AST)*n;
+}
+
+abc! expression;
+
+
+
+
+**lift up const like dart**
+render 函数中经常出现 arrow 函数, 如果这个 arrow 函数是个闭包, 捕获了外部变量, 那没办法, 但如果这个函数不是闭包, 例如只是一个 compare 函数, 完全可以提升到最外部, 然后弄个 memonize_compare(arr, lift_up_compare_fn).... 甚至就算闭包, 如果捕获的变量是 render 外部的, 比 render 生命周期更长的变量, 一样可以这样提高性能...
+> 但为什么要 lift up 呢, 为的是减小作用域... 另外, lift up 的都是值, 这样就是编译期自动命名了...
+可以加关键字 `memonize_compare(arr, lift (a, b) => -1)`, lift 关键字是作用在值上, 相当于在上层加了句  `let lift_final_1 = expression;`, 
+
+但是, memonize_compare(arr, lift_up_compare_fn)  这种调用不适合链式调用. 可以:
+函数仍是普通的函数, 但可以中置调用
+fn memonize_compare<T>(this: T[]: fn: (a: T, b: T) => -1|0|1): {} --- [1,2,3].memonize_compare((a,b) => -1)
+前置调用:
+fn abc(a: i8, b: i16, c: i32): i32 {} --- abc(1i8,2i16,3i32)
+后置调用:
+fn abc(this: i8): i32 {} --- 18i8.abc()
+> 中置调用 定义的函数, 也可以前置调用
+这就全了, 没有说把 this 放进参数列表的中间的情况... 事实上 this 是一个类型, this 后面的所有参数作为一个整体 tuple 是另一个类型
+......
+不做什么面相对象编程设计, 而是统一用作用域来找函数
+```ts
+// a.ts
+export type Person = { name: string, age: number }
+export function say_hello(this: Person) {}
+const a: Person = {name:'xia',age:29}
+console.log(a.say_hello()); // ok
+console.log(say_hello(a)); // ok
+
+// b.ts
+import {Person} from './a';
+const a: Person = {name:'xia',age:29}
+console.log(a.say_hello()); // not ok, 因为当前作用域没有 say_hello 函数... 需要类似下面 c.ts
+
+// c.ts
+import {Person, say_hello} from './a';
+const a: Person = {name:'xia',age:29}
+console.log(a.say_hello()); // ok, 因为当前作用域有 say_hello 函数
+
+// d.ts
+import {Person, say_hello} from './a';
+const a: Person = {name:'xia',age:29}
+console.log(a.say_hello()); // ok, 因为当前作用域有 say_hello 函数
+(() => {
+  function say_hello(this: any) {console.log('this:any')}
+  a.say_hello(); // ok and log - this:any 此时, 作用域被覆盖
+})()
+
+// e.ts
+// ! 现在需要考虑 是否支持函数重载, 即
+type Person {};
+type Animal {};
+function say_hello(this: Person) {}
+function say_hello(this: Animal) {}
+// 自动寻找匹配的函数...
+
+// 感觉并不需要函数重载, 编辑器自动 auto_import, auto_rename 就好...例如
+import {Person} from './a';
+const a: Person = {name:'xia',age:29}
+a.say// 输入到这里的时候, 编辑器能找到 say_hello , 选择 auto_complete 时, 就 import {say_hello} from './a' 了
+
+// ...还是不弄作用域完全分离了, 换成
+import {Person} from './a';
+const a: Person = {name:'xia',age:29};
+a.say_hello();  // ok
+say_hello(a); // not ok
+Person.say_hello(a);  // ok = 应是 Person::say_hello(a)
+import {say_hello} from './a';
+say_hello(a); // ok
+// 甚至 这个 import {say_hello} from './a'; 都可以不要, 因为有 Person::say_hello ... 这样再减少下重复书写, 就跟 rust 的 impl Person {} 一模一样了
+export function say_hello(this: Person) {} ==== impl Peerson { pub fn say_hello(&self) {} }
+export function say_hello(this: Person as SayHello) {} ==== impl Peerson for SayHello { pub fn say_hello(&self) {} }
+// 但问题是, memonize_compare 它不是一个 fn, 而是一个 闭包, 而且这个闭包有多种实现方式, 全局的闭包, 或者依赖于 this 的闭包, 于是
+impl Person {
+  static cache = Arc([]);
+  // pub fn memonize_compare() { cache } ... 换成 const memonize_compare = () => {} ... 因为上面也有赋值语句... 但赋值语句也可以 pub...
+  // 即 pub 的可使用的地方是 所有的可被当成命名空间的地方, 那种地方不可以有条件语句/循环语句... 模块, impl 块 都如此
+}
+```
+但是还需要考虑, 这种机制下, trait 的作用如何实现.
+type 是数据结构
+
+**构造函数是有用的**
+构造函数是有用的, 避免直接暴露结构体, 让用户创建出错误的数据, 但函数重载很不好, 所以用 dart 的方式写构造函数.
+```dart
+class A {
+  var a = 1;
+  val b = 2;
+  pub var c = 3;
+  A.w() {
+    // 此时, 所有的 var a = 1;val b = 2; 都已经执行完, 哪怕是在下面的, 因为它算是异步的. 
+  }
+}
+interface T {
+
+}
+impl T for A {}
+```
+
+
+**是传参数, 还是传函数**
+这个项目, https://github.com/alpinejs/alpine , 尝试把它变成 jsx, 哪怕不用 vdom, 也会发现需要使用 render-props...
+```jsx
+<div x-data={{count:0}}>
+  {_ => <button onClick={() => _.count++}>{_.count}</button>}
+</div>
+```
+但目前, 写函数的成本仍然太大...能不能更小的成本...例如 scala 的隐式函数...
+```js
+div({x_data:{count:0}}, _ => [<button onClick={() => _.count++}>{_.count}</button>])
+// 等效于
+div({x_data:{count:0}}, [<button onClick={_.count++}>{_.count}</button>])
+// 其实这里 onClick={_.count++} 是有问题的, 因为 onClick 也是函数, 则里面的 _ 变成了 event 参数
+// 不如
+{
+  const data = {count:0};
+  div([<button onClick={data.count++}>{data.count}</button>])
+}
+```
+
+
+**让赋值语句也是函数调用, 把函数调用变的普遍, 调试栈是所以运行代码的集合**
+13 -> (a: final i32);
+console.log(a);
+jsx 所有的 children 都变成 render props
+
+**所有的 数值字面量 都是BigDecimal, 然后丢失信息赋值到变量类型** 则:
+var a = 0.1 + 0.2;  --- var a: f32 = BigDecimal('0.1') + BigDecimal('0.2') --- var a: f32 = BigDecimal('0.3');
+var a = 0.3; --- var a: f32 = BigDecimal('0.3');
+a === 0.3; --- a === BigDecimal('0.3') --- a === (typeof a)(BigDecimal('0.3')) --- true
+
+
+**class 本质上是一个 function**
+https://github.com/reactjs/rfcs/issues/177
+return is the natural way to send a value out ... 所以用 return ref 代替 forwardRef 更合适...
+但是为什么 class component 里用特殊属性, 代替 forwradRef 更好呢? 更准确的问题是:
+为什么直觉里 class 的 代替 forwardRef 的形式就是特定属性呢?
+就是因为 class 本质上是一个 function, 而 属性 则是这个 function 的一个返回值...
+进而更深入的认识到, class 就是一个 闭包, 无非是闭包捕获的变量可作为属性去访问...
+
+所以也许可以:
+class A(_name: string) {
+  name = _name;
+  
+}
+其实本质上, class 与 vue 的 composition-api 的 setup 函数没啥不同, 都是创建一个状态机...
+然后在语言层面, class 可以作为 一个纯粹的类型(完全不存在与运行时中), 也可以作为一个 namespace,
+class 的 constructor 其实就是 class 作为 namespace 下面的函数
+static member 是 namespace 下面的状态... 暂时不知道是否应该允许内部闭包类
+class 的区域应该是纯声明式的, 没有上下, 先后, 条件的关系
+
+class A {
+  name: string;
+  age: number;
+}
+语法糖(这里用 () 表示 dict, 用 [] 表示 list): A (name:'xia';age:29) or A ['xia',29] .... --- 也许都用 () 然后用 ; 区分 dict, 逗号 区分 list 更合适
+如果 A 有了自定义的 constructor, 则没有上面的语法糖 constructor:
+class A () {
+  name: string;
+  age: number;
+}
+class A (_name: string) {
+  name = _name;
+  age: number;
+}
+class A {
+  name: string;
+  age: number;
+  A (_name:string,_age:number) {
+    name = _name;
+    age = _age;
+  }
+}
+
+class 的模式与 rust 有显著不同... rust 是区分状态可变不可变, 并且有内部可变性的, 而 class 是状态机, 显然作为状态, 本身就是可变的
+... 但这种不同又在本质上有另一种相同... class 本质是一个 闭包... 然后 rust 的闭包是 FnMut ... class 其实也是如此...这是一种内部可变性
+所以...单纯的数据用 匿名 tuple/dict, 或者用 type 给它名字... 状态机 则是 class
+struct PersonData = (name:str;age:i8);
+class Person {
+  mut data: PersonData;
+  Person(_data: PersonData) {
+    data = _data;
+  }
+}
+
+...
+有纯粹的 interface 要求一个实体实现了 xx 函数集合 ... 或者不止函数集合, 也有状态集合....
+也有 mixin 里面自带方法体, 或者 状态实体, 直接把方法体包含进去, 也生成状态(这里似乎 mixin 也有 constructor, 不然 状态可能非法), 放进去...
+一个是纯粹的要求, 一个是辅助覆盖, 一个有状态, 一个只有方法 ... 2x2=4 , 应能生成 4 种模式...
+但是真正接口使用方其实不应该在意状态(真在意也可以提供 getter), 所以 interface 应该没有状态集合...
+而因为 似乎 mixin 也有 constructor, 不然 状态可能非法... 所以根本就不应该有 mixin, 而是一个新的 class, 被 mixin 的对象只是新的 class 的一个成员...
+所以最终是 没有 mixin, 而 interface 也只有方法的集合(有的方法只有方法声明, 有的有方法体, 有方法体的方法只能使用该 interface 的方法声明或方法体的方法, 如果想更改状态, 应该是调用只有方法声明的方法, 然后等待那个只有方法声明的方法被实体类实现), 而实体类实现 interface 时, 必须实现只有方法声明的方法, 在里面可以访问实体类和interface的任何成员
+
+关于 class 的东西, 干脆换一个关键字... 例如 state_machine 或直接 state
+
+考虑到 vue 的 composition-api 的 setup 函数是创建一个状态机, 之后都是 render 方法, 跟 class 组件其实是一样的, 那有没有可能有这样的语法:
+class A mix B, C {
+  onMount(() => {});
+  onMount(() => {});
+  if (true) {
+    onUnmount(() => {});
+  }
+  var c = ref(0);
+  render() {
+    return <div>{c.value}</div>
+  }
+}
+... 好像完全不可能, 因为如果有死循环了...
+但换成这样就可以了
+class A mix B, C {
+  constructor(props) {
+    super(props);
+    this.onMount(() => {});
+    this.onMount(() => {});
+    if (true) {
+      this.onUnmount(() => {});
+    }
+    this.c = ref(0)
+  }
+  render() {
+    return <div>{this.c.value}</div>
+  }
+}
+**--------------下面非常重要--------------**
+... class 状态机 是 适合 大部分消息来自于外部; (内部状态引用都需要一个 this, 麻烦一些)
+... setup 状态机 是 适合 大部分消息来自于内部; (有快捷的内部状态引用)
+如果 class 相比 setup 仅仅只是这么个优点的话, 似乎新语言完全不用 class, 只用 闭包 返回带有函数字段的 对象就够了
+function new_person(name: string) {
+  return {
+    name, // 这里的 name 应该是地址的引用, 即 get name() {return name},set name(v) {return name=v}
+    hello: () => console.log(name),
+    eat: (thing) => console.log(name + ' eat ' + thing),
+  }
+}
+然后是纯粹的鸭子类型做多态即可
+...
+但是函数要怎么复制呢... 类的继承, mixin, 可以定义函数使用外部变量:
+```mylang
+const eat = (name: &str) => () => {
+  console.log(name + ' is eating.');
+}
+const hello = (name: &str; age: &u8) => () => {
+  console.log(name + ' is ' + age + ' years old.');
+}
+const TraitEatAndHello = (name: &str; age: &u8) => (eat: eat(name); hello: hello(name;age))
+const new_person = (name: str; age: u8) => {
+  return (
+    ...TraitEatAndHello(name; age);
+    ...TraitHasName(name);
+    sing: () => console.log(name + ' is singing.');
+  )
+}
+
+// 但是这限制了只有一个 constructor, 相比 dart 的 named constructor...于是
+const new_person = xxx;
+const new_person_from_json = xxx;
+但是这样如何保证 上下两个函数 的返回类型一样呢....甚至 仅仅一个 function, 都可能返回一个 union 类型
+```
+
+function say_hello() {
+  rtc name: string, age: number;
+  console.log(name, age);
+}
+const TraitA = { say_hello };
+function new_person(name: string) {
+  return {
+    ...TraitA,
+    ...TraitB,
+    // 这里的 name 应该是地址的引用, 即 get name() {return name},set name(v) {return name=v}...
+    // 它对于 rust 那种系统编程级别的语言, 就是天然的 mut 借用, 对于 js 这种, 则是 get set
+    name, 
+    hello: () => console.log(name),
+    eat: (thing) => console.log(name + ' eat ' + thing),
+  }
+}
+
+**--------------上面非常重要--------------**
+
+
+java 的 package 机制是所有的 package 都是命名空间, 都是公开的, 只是名字的长短不同而已... js 的文件模块机制也是全部是公开的...
+java 与 js 的区别只是 java 没有 import a from './a'; export { a }; 即 java 没有 reexport
+
+
+**jsx 为了逻辑, 逻辑代码放 jsx 中, 为了性能, 实际定义放上层 --- lift 关键字**
+```jsx
+// 为了方便编写 和 代码阅读
+const MyCom = defineComponent({
+  setup() {
+    const tick = ref(0);
+    return () => (
+      <div>
+        <button onClick={() => tick.value++}>{tick.value}</button>
+      </div>
+    )
+  }
+});
+
+// 为了性能
+const MyCom = defineComponent({
+  setup() {
+    const tick = ref(0);
+    const tick_increase = () => tick.value++;
+    return () => (
+      <div>
+        <button onClick={tick_increase}>{tick.value}</button>
+      </div>
+    )
+  }
+});
+
+// 新语言 lift 关键字: 会先看 接下来的表达式 引用了什么变量, 然后把此表达式尽可能地往上提升
+const MyCom = defineComponent({
+  setup() {
+    const tick = ref(0);
+    return () => (
+      <div>
+        <button onClick={lift () => tick.value++}>{tick.value}</button>
+      </div>
+    )
+  }
+});
+
+// doc lift
+// from
+const tick = ref(0)
+return () => lift () => tick.value++
+// to
+const tick = ref(0)
+const $1 = () => tick.value++
+return () => $1
+
+// from
+const tick = ref(0)
+{
+  const b = 2
+  const d0 = () => {
+    console.log(lift tick);
+    console.log(lift b);
+  }
+}
+// to
+const tick = ref(0)
+const $1 = tick
+{
+  const b = 2
+  const $2 = b
+  const d0 = () => {
+    console.log($1);
+    console.log($2);
+  }
+}
+```
+但是如果按 rust 的系统编程形式说明, 对 lift 关键字定义出的对象的使用, 都是不可变借用...
+另外, lift 关键字可以 lift 到顶层, 再顶层, 就变成了类似 dart 的 const value... lift 可以自动提升到 const value
+
+
+
+**延迟 type**
+```ts
+infer type G;
+
+const vuex_module = {
+  getters: {
+    g: (state, getters, rs, rg) => ({...} to G)
+  },
+  actions: {
+    a: ({commit, getters}) => {
+      getters.g as G
+    }
+  }
+}
+```
+
+
+**错误处理**
+go 的 return error 脱裤子放屁
+相反 panic recover 很好
+另外 try catch 造成了缩进... 如果 panic revocer 是无缩进的 即
+```go
+do_something();
+panic xxx;
+do_something();
+recover xxxxx;
+```
+即, 在 panic 之后, 下面的所有代码都被忽略, 直到遇到第一个 recover, 遇到 if 也忽略, 不忽略 loop defer
+但这样 panic 又会丢失 错误的类型信息.... 其实编译器真要收集 也是可以收集到 所有的错误类型的, 得到一个 union type, 则:
+```mulan
+fn do_a() {
+  panic '错误';
+}
+fn main() {
+  do_a();
+  panic 2;
+  let e: string|number = recover;
+  match e {
+    case string: xxx;
+    // case number: xxx;
+    case _: xxx;
+  }
+}
+// or
+fn main() {
+  defer {
+    let e: string|number = recover;
+    match e {
+      case string: xxx;
+      // case number: xxx;
+      case _: xxx;
+    }
+  }
+  do_a();
+  panic 2;
+}
+```
+但又有问题, 当把一个 会 panic 的函数 A 作为参数传给别的函数 B 时, B 运行 A 会导致 B panic 出了 A 会 panic 的类型, 这里编译器要怎么知道 panic 的类型
+... 所以, 所有几乎所有函数都至少还有个 error 泛型
+http://semicircle.github.io/blog/2013/09/24/letpanicfly/
+recover() 应该能返回 error 和 stack_trace, error 是用户 panic 的任何东西, stack_trace 是 recover 本身收集的. 还可以 recover(option) option 告诉说不用 stack_trace, 从而 recover 更快
+
+需要知道 dynamic dispatch 和 static dispatch 的区别
+
+
+**基本构成**
+const item 只有 函数, 基本类型, 结构体 和 结构体的值... 没有 class 的 new ... 没有 函数调用... 总的说来就是没有函数调用, 哪怕是 constructor 也一样, 避免副作用
+有全局函数 get_current_thread() ... thread 上可以放一些状态... thread 上放的状态要求 size, 所以 main 函数 上可以声明第一个 thread 的 context type...
+后续创建 thread, 要先创建一个 context, 然后 move 到那个 thread 上...
+因为 'const item 只有 函数, 基本类型, 结构体 和 结构体的值', 所以初始化完全无需担心循环依赖 (结构体它循环依赖不了, 因为如果循环依赖, 他就无法创建此结构体的值; 函数循环依赖, 他只是死循环, 是合法的)
+好像不是, 不然 const A = 1 + 1; 这种就不能有了, 因为它是函数调用... 除非说区分基本类型,操作符 ...
+大概应该是所有的 const 的东西都可以参与进来... 而所有的 io 都不是 const 的, 即使用了 std.io 的 main 函数不算 const
+
+
+**同时提供鸭子类型与准确类型**
+提供准确类型的原因是, 鸭子类型有可能发生类型碰撞. 例如 error 有 AError = { message: '', a: xx } BError = {message: '', b: xx}... 这很好, 但谁知道会不会有人写出了 CError = {message:'',a:xx} 呢, 毕竟写 CError 的时候不知道存在 AError ...所以需要在出现 UNION 类型时, 自动添加 类型 id, 以在运行时区分, 这就有准确类型存在的情况, 也是必要了.....Error 是被动的 union 类型, 其他 Array 啥都是主动的 union 类型, 由用户自己加个标志位完全可以理解, 而被动的 union, 用户无法主动加唯一标志位....即
+type Person = {name:string,age:number};
+fn a(x: Person) {}
+a({name:'xia',age:3}) 是错的, 
+需要写成 a(Person{name:'xia',age:3})
+
+
+**默认 private**
+vue 的 setup function 是创建状态机, react 的 class api 也是创建状态机...任何语言的 class 都是创建状态机...
+所以其实 setup function 就是 class 的一个变体, 无非只是它只有一个 pub member - 返回的 render 函数...
+如果我们需要, 完全可以 setup function 返回一个 { render: xxx, ref: xxx } 来多加几个 pub member...
+闭包捕获的东西, 其实就是 能被 pub member 引用的 pri member

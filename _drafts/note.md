@@ -1235,3 +1235,808 @@ https://github.com/cryptocoinjs/base-x 可以先生成几个字节的随机数�
 /abc?n=1  和 /abc?n=2 爬虫会把他们识别为 2 个页面... 但是之后根据这请求, 导向对应的 html 就要 nginx 做 rewrite 了
 hash className 不适合 seo, 需要语义 html tag 和 className... 可以加 无意义的语义 className
  记得 head 里加 seo meta
+
+
+**vue composition api**
+vue composition api 是用命令式语法写出状态机. react hooks api 本质也是用命令式语法写出状态机, 不过脑子要转一层...
+最好的前端框架应能做到 命令式语法 与 声明式语法 随意切换...
+react 可以写 RenderProps 组件:
+```jsx
+const RenderHooks = ({children}) => children();
+const vdom = <RenderHooks>{() => {
+  const [count, set_count] = useState(0);
+  return <button onClick={() => set_count(count+1)}>{count}</button>
+}}</RenderHooks>
+```
+于是, vue 理应也可以做到
+```jsx
+const vue_vdom = <Setup>{() => {
+  const count = useRef(0);
+  return () => <button onClick={() => count.value++}>{count.value}</button>
+}}</Setup>
+```
+为什么 "最好的前端框架应能做到 命令式语法 与 声明式语法 随意切换..." ...
+因为这样好用, 更能达到 上帝的归上帝, 凯撒的归凯撒. 甚至可以:
+```jsx
+const vue_vdom = <Setup>{() => {
+  onMounted(() => getCurrentInstance().$ele.animate());
+  return () => <button>123</button>
+}}</Setup>
+```
+
+**idea: 增加个 js 编译期工具**
+```tsx
+compt!{
+  return require('fs').readdir('../imgs').map(img => `import img_${img} from '../imgs/${img}';`).join('\n')
+}
+console.log(img_abc);
+
+// or
+compt(() => require('fs').readdir('../imgs').map(img => `import img_${img} from '../imgs/${img}';`).join('\n'))
+compt(function() {
+  return require('fs').readdir('../imgs').map(img => `import img_${img} from '../imgs/${img}';`).join('\n')
+})
+
+// or compt 里的函数不能是闭包...更类似于
+compt("require('fs').readdir('../imgs').map(img => `import img_${img} from '../imgs/${img}';`).join('\n'))")
+```
+
+**所有的应用逻辑状态, 应该都是 git 状态**
+@antv/g6 里的 behavior 有 click-select, 也可以自定义 hover-select ... 然后, 两者完全可能会发生冲突...
+在 hover 的 mouseenter 时, 设置 selected=true, 在 mouseleave 时设置 selected=false... 但原本该节点就是 selectd 时, 则进去出来一次, 原有状态就被清空了
+于是可以在 hover 的 mouseenter 时, 记录原状态 item.old_selected=item.hasState('selected') 之后再设置新状态, leave 时恢复至原状态...
+但还可能在 mouseenter 后, mouseleave 前, 有别的东西修改了其状态(click 设置 selected)... 这就会出现 click-select 无效...
+所以本质是 "一个状态, 协作修改, 应该使用 git 的逻辑..."
+> 但是这在 app 开发中, 想完全自动 git 几乎不可能, 因为可能出现 merge conflict, 所以应该是不同的东西修改不同的状态, 
+但是现实世界却是"不同的东西修改相同的状态", 所以是 "不同的东西修改不同的状态, 最后在别的地方有状态合并"...
+而 render 函数最方便做状态合并: item.setState('selected', item.hover_selected || item.click_selected);
+其实是 A 逻辑改 a 状态, 产生 $a stream, B 逻辑改 b 状态, 产生 $b stream, 然后两个 stream 聚合 --- cyclejs
+
+
+**new framework**
+```tsx
+// 纯 js, 无需响应式, 类似 flutter
+const Com = () => {
+  let c = 0;
+  return () => <div>
+    <div onClick={_ => update(() => c+=1)}>{c}</div>
+    <div onClick={new_update(() => c+=1)}>{c}</div>
+  </div>
+}
+// ? 目前不清楚 props 应该怎么放, 放 A 处, 不能 watch, 放 B 处, 要跟 react 一样...
+// ? 或者放 A 处, 要保持 props 引用不变, 然后 watch(() => props.a, (cv, pv, inv) => {}, opts), 这样要求框架有较多的全局状态, watch 不能随处 watch
+const Com = (A) => {
+  let c = 0;
+  return (B) => <div>
+    <div onClick={_ => update(() => c+=1)}>{c}</div>
+    <div onClick={new_update(() => c+=1)}>{c}</div>
+  </div>
+}
+// 组件 h 函数, 自带属性选择器... 生成 <div data-id="ComH_hash">Hello</div>
+const ComH = () => {
+  return h => <div>Hello</div>
+}
+// 总的
+import createApp from 'my_package';
+const app_update = createApp(<App />).mount(any_dom_comment_or_ele_or_any_other);
+let app_state = { c: 0 };
+setInterval(() => {
+  app_update(() => app_state.c += 1);
+}, 1000);
+const App = () => {
+  return () => <div><Acom /><Bcom/></div>
+}
+const MyCom = (props) => {
+  // 只在 setup 与 onMounted 可以 watch... computed 也是
+  watch(() => props.a, () => {});
+}
+
+// createApp(<App />) 而不是 createApp(App) 是因为 render 里的 <div><Acom /></div> 本质是把这个 <Acom /> 传到 createCom(<Acom />).mount(create_comment());
+// 这样的话, react 是把所有的事件都提升到 app root dom 上, my_package 则把所有的事件都提升到各自的 com root dom 上, 性能要差些, 但应该没问题
+
+// 全局 update 函数不知如何实现
+const update = create(<Com />); // 这是组件自己的 update, 但如何有个 全局 update, 根本无解, 通过事件时设置 update 全局也不可行, 因为有对父组件的回调
+// 所以在 setup 函数中 getCurrentInstance().update
+
+// ! 似乎这么多, 还不如 react 的 hooks, 毕竟感觉 watch(() => props.a) 要保持 props 对象的引用, 并不好
+const Com = props => {
+  useSetup(() => {
+    let c = props.initial || 0;
+    // 也不好, 作用域问题...
+    return { c };
+  });
+}
+
+// 那就如果觉得 保持对 props 的引用较 low, 就干脆, getCurrentInstance().props ... 所有对 props 的合理应用都是 this.props 来用
+// 可以用 this, 也可以用 getCurrentInstance(), 最好后者, this 易出现误解 ... 只是定义个类型... 则:
+const instance = create(<Com />);
+// instance.update
+// instance.props
+const Com = () => {
+  const ins = getCurrentInstance();
+  // 用户可以自己通过简单 hack 得到 const reactive_props = ins.reactive_props; watch(() => reactive_props.value, ...);
+  console.log(ins.props);
+  let c = ins.props.initial || 0;
+  watch(() => ins.props.value, cv => ins.update(() => c = cv));
+  // 其实如果必须 ins, 则 watch, onMounted 之类都可以放到 ins 上... ins.watch(), ins.onMounted()... 
+  // 如果都放到 ins 上, 则, 并非必须在 setup/onMounted 里 调用...
+  return h => <div><div>{c}</div>{ins.props.value}</div>
+}
+
+// 像这种纯 js 没法做 computed, 其实也可以, useMemo ...但总体性能还是比 reactive 差
+// 或者还是 shallow_reactive_props, shallow_ref_state 最合适
+import { shallowRef } from "@vue/composition-api";
+import immer from 'immer';
+const ref = <T extends any>(obj: T) => {
+  const proxy = shallowRef(obj);
+  proxy.immer = (fn:(base: T) => any) => proxy.value = immer(proxy.value, (base: T) => { fn(base); })
+  return proxy;
+};
+const count = ref({ count: 0 });
+console.log(count.value);
+count.immer(c => c.count+=1);
+count.value = "total change";
+
+// or better ts
+const immer_ref = <T>(obj?: T) => {
+  const target = shallowRef(obj);
+  const set = (fn:(base: T) => any) => {
+    target.value = immer(target.value, (base: any) => {
+      fn(base);
+    });
+  }
+  return new Proxy(target, {
+    get(target, p, receiver) {
+      if (p === 'value') {
+        return target.value;
+      }
+      if (p === 'immer') {
+        return set;
+      }
+    },
+    set(target, p, value, receiver) {
+      if (p === 'value') {
+        return target.value = value;
+      }
+      return value;
+    }
+  }) as (typeof target) & { immer: typeof set };
+};
+```
+vue2 之所以要区分 props 和 attrs 就是因为 props 是响应式的, 而 vue2 用的响应式 getter/setter, 需要预先定义好字段
+而 props 只要支持 `<div {...props}></div>`, 就会出现没有预先定义的字段, 所以需要手写 `{ props: ['a','b'] }`
+在使用 proxy 之后, 就不需要定义 props 也能完全响应式了, 能 `watch(()=>props.a, a => a)` 了
+
+vue composition api 需要 ref instance 可以:
+```tsx
+const MyCom = (props) => {
+  const command = () => {};
+  // 可以只返回 render 函数, 则 ref 此组件得到 undefined ... 
+  // 返回 [instance, render] ... instance 并不一定是 object, 也可以是 primitive type or function
+  // 为什么不像 react forward 在 顶部参数里加上 ref... 因为那样要预先定义类型
+  return [{ command }, () => <div></div>]
+};
+```
+
+**tsx**
+```tsx
+var a = <div>
+    <img />
+    <abc.af />
+    <ninja />
+    <Img />
+    {[() => 123, () => 222]}
+    {() => 234}
+</div>
+// 被编译为
+var a = h("div", null,
+    h("img", null),
+    h(abc.af, null),
+    h("ninja", null),
+    h(Img, null),
+    [() => 123, () => 222],
+    () => 234);
+```
+
+
+**多镜头投影仪**
+小孔成像原理很简单, 而且它的清晰度取决于小孔直径, 直径越小, 成像越清晰;
+眼睛成像是进化版的小孔成像, 通过晶状体, 让逻辑上的小孔的直径变成无限小, 而实际的小孔可以大一些, 从而有更多的通光量;
+想着餐厅可以用投影仪把订餐界面投到桌面上, 用户可以在上面操作, 甚至按下界面上的占位按钮, 就可以占位(桌面显示此处已占位), 整个餐厅只用一个投影仪, 而不是一个桌面一个(这成本太大, 而且不好移动桌面)...
+但是投影仪有劣势是会被物体遮住, 所以如果有侧面的投影仪会更好, 而且移动桌子本身也要求投影仪侧投. 而想要任意侧投, 又要保持投影出来的界面是正规的矩形, 还想要充分利用分辨率(即侧投是通过光线变化来实现, 而不是通过投影仪显示屏幕的画面变换来实现), 则需要一个能任意变形的透明玻璃(即眼睛的晶状体)...
+要做眼睛的晶状体, 要不就做一个实际的晶状体, 要不就做一个逻辑的晶状体(通过一堆反射镜各种改变角度).
+但就算能任意侧投, 会被挡住还是会被挡住, 所以如果能多个不同位置的投影镜头, 在同一个物体上, 投影同一个界面, 类似无影灯, 这样就不会被遮住了. 
+而且对于手势操作的输入检测, 给每个投影镜头都配一个摄像头, 则保证了, 只要用户能看到自己点击了这个按钮, 则一定有一个摄像头也能看到用户点击了这个按钮.
+
+
+**typescript 类型定义要注意 逆变协变**
+```tsx
+export const with_ctx = <CtxT extends React.Context<any>, prop_nameT extends string>(
+  Ctx: CtxT,
+  prop_name: prop_nameT,
+) => {
+  return <ComT extends React.ComponentType>(Com: ComT): FC<Omit<ComponentProps<ComT>, prop_nameT>> => props => (
+    <Ctx.Consumer>{ctx => <Com {...({ ...props, [prop_name]: ctx } as any)} />}</Ctx.Consumer>
+  );
+};
+
+// 于是
+const A: React.FC<{name: string,age:number}> = () => null; // 这里参数部分不写 props, 或者写 props: {} 都是可以的
+// 即 ----- 外面必须多传字段, 里面可以少用字段 -----
+const NameCtx = React.createContext<string>('');
+const with_name = with_ctx(NameCtx, 'name');
+const B = with_name(A); // 这里传入 A, ts 会报错... 因为 with_name 接收的参数是 ComT extends React.ComponentType
+// 而 React.ComponentType 是 type ComponentType<P = {}> , 即 ComponentType<{}>...
+// 即 const left_value: ComponentType<{}> = right_value as FC<{name: string,age:number}> ... 即 外面可以不传字段, 里面却要多用字段, 显然有问题
+// 所以应该改成 const left_value: ComponentType<any>
+```
+变量 value 等效于 函数 () => value
+
+
+**react clean up resource shared by children**
+```tsx
+/**
+ * https://github.com/facebook/react/issues/19482
+ * https://github.com/facebook/react/issues/6424
+ *
+ * 这样无效
+ * <div>
+ *   <UnloadWrapper onUnload={this.componentDidUnmount}></UnloadWrapper>
+ *   {this.props.children}
+ * </div>
+ *
+ * 这样有效
+ * <div>
+ *   {this.props.children}
+ *   <UnloadWrapper onUnload={this.componentDidUnmount}></UnloadWrapper>
+ * </div>
+ *
+ * 这样保险, 正确
+ * <div>
+ *   <UnloadWrapper onUnload={this.componentDidUnmount}>{this.props.children}</UnloadWrapper>
+ * </div>
+ *
+ * 最正确的是 子元素 的 render 里也渲染一个 UnloadWrapper.
+ * 当然, 只是单层资源嵌套的情况下, 子元素直接在 componentWillUnmount 执行 clean up 逻辑也没问题.
+ */
+export class UnloadWrapper extends Component<{ onUnload: () => void }> {
+  style = { display: "none" };
+  onUnload = (ele: HTMLSpanElement) => {
+    if (!ele) {
+      this.props.onUnload?.();
+    }
+  };
+  render() {
+    return (
+      <>
+        {this.props.children}
+        <span style={this.style} ref={this.onUnload} />
+      </>
+    );
+  }
+}
+
+// // 还可以
+/**
+ * willMount    didMount
+ * willUpdate   didUpdate
+ * willUnmount  didUnmount
+ */
+// const useWillDid = <T extends () => void | (() => any), D extends any[]>(fn: T, deps?: D) => {
+//   const out = useRef<() => any>();
+//   out.current = useMemo(fn, deps) as any;
+//   useEffect(() => {
+//     out.current && out.current();
+//     out.current = undefined;
+//     return () => !out.current && (out.current = fn() as any);
+//   }, [out.current]);
+//   const style = useMemo(() => ({display:'none'}), []);
+//   return <span ref={useMemo(() => ele => !ele && out.current && out.current(), [])} style={style}></span>;
+// };
+
+// // or
+// const useWillDid = <T extends () => void | (() => any), D extends any[]>(fn: T, deps?: D) => {
+//   const out = useRef<() => any>();
+//   out.current = useMemo(fn, deps) as any;
+//   const is_last = useRef(false);
+//   is_last.current = false;
+//   useEffect(() => {
+//     out.current && out.current();
+//     is_last.current = true;
+//     return () => {
+//       if (is_last.current) {
+//         out.current = fn() as any;
+//       }
+//     };
+//   }, [out.current]);
+//   return (
+//     <span
+//       ref={useMemo(
+//         () => ele => {
+//           is_last.current && && out.current && out.current();
+//         },
+//         [],
+//       )}
+//     ></span>
+//   );
+// };
+
+// 上面注释的把三个声明周期混合, 并不能做 resource clean up , 下面的才 ok
+type life = 'mount' | 'update' | 'unmount'
+const useWillDid = <T extends (life: life) => void | ((life: life) => any), D extends any[]>(fn: T, deps?: D) => {
+  const inv = useRef<void | ((life: life) => any)>();
+  const mounted = useRef(false);
+  const is_last = useRef(false);
+  is_last.current = false;
+  inv.current = useMemo(() => fn(mounted.current ? 'update' : 'mount'), deps);
+  useEffect(() => {
+    inv.current && inv.current(mounted.current ? 'update' : 'mount');
+    mounted.current = true;
+    is_last.current = true;
+    return () => {
+      if (is_last.current) {
+        inv.current = fn('unmount');
+      }
+    };
+  }, [inv.current]);
+  const style = useMemo(() => ({ display: "none" }), []);
+  const ref = useMemo(() => (ele: any) => !ele && inv.current && inv.current('unmount'), []);
+  return <span ref={ref} style={style}></span>;
+};
+```
+
+
+**websocket 最佳体验**
+知道 websocket 最佳体验是:
+服务器每隔一秒向客户端发个 空消息, 
+客户端时刻监测自己超过 2 秒没收到消息, 就主动断掉 websocket, 从而在界面上显示网络连接已断开, 并再次连接 websocket...
+> 对于这一套做法, graphql 的 apollo-server 和 apollo-client 对应的 subscriptions-transport-ws 已经自带这一套逻辑:
+它是 在服务端 设置 keepAlive: 1000 (每 1000ms 给所有的连接端发一个 空消息), 在客户端设置 timeout: 2000 (2000ms 内没收到消息就断开重连)
+
+
+**for await...of vs for...of {await}**
+```js
+A: for await (const x of asyncIterable) { console.log(x); };
+B: for (const x of asyncIterable) { console.log(await x); };
+// A, B 两者是完全不同的
+// A 是循环体运行结束后, 会等待 "新的 promise 到来, 并等其结束" 或 "所有都结束"
+// B 是循环体运行结束后, 直接拿下一个 promise 进入循环体... 但事实上, 这个时候还不知道有没有下一个 promise... 如果没有下一个 promise, 但已经进入循环体了, 则能做的只有 throw, 但它其实是正常结束, 而不是 throw error... promise 也没有 break 状态, 也不该关心外部 for 循环的 break
+
+// 其实感觉换成这样更好 --- 这是表达式里可以有语句
+while (const {value,done} = await asyncIterable.next(); !done) {
+}
+```
+
+
+
+
+**vue 组件的最顶层 div 不要加 class, 让外面加**
+不然, 内部有  class="graph" ... 外面有 .graph 给其他的 元素用... 这样就冲突了
+
+
+**queueMicrotask**
+if (typeof window.queueMicrotask !== "function") {
+  window.queueMicrotask = function (callback) {
+    Promise.resolve()
+      .then(callback)
+      .catch(e => setTimeout(() => { throw e; }));
+  };
+}
+
+
+**input mask**
+input mask 应该与手机上单屏幕输入短信验证码的, 例如 4 位短信验证码, 有 4 个短横线, 在那 4 个短横线上输入... 应该对应这种场景来想.
+所以 mask input 其实只是**一块能响应键盘输入的屏幕空间**, 然后因为 mask input 可能有 pattern , 例如 1 字母 + 2 数字+ 1 标点 + 1 字母... 
+所以它想要支持用户把光标移动到中间, 删除中间某一位, 这会造成非常麻烦的逻辑问题...
+所以合适的是 mask input 根本不支持光标移动, 或者支持移动, 但操作如下:
+当光标在当前输入的最后一位时, 可以 backspace, 可以输入文字(继续输入后面的空白处);
+当光标在中间部分时, 不可以 backspace, 只可以输入文字(替换光标的后一位);
+
+
+**加密文件系统 + 版本文件系统**
+keepass 与 git 不好兼容使用, 而且我们可能希望使用更好用的 keepass, 让 keepass 直接提供一个加密文件系统...
+然后对于服务器, 我们是把加密后的整体同步到 服务器上, 然后服务器又对应多个客户端, 似乎服务器也要支持版本控制...
+但服务器存的是加密后的东西, 所以版本管理里 合并 就无法完成(不懂内容, merge 是会出错的)...所以服务器没有版本控制, 它只能是时刻保持最新版本...
+也不是说服务器始终保持最新, 而是客户端保持一个 同步记录 列表( hash 数组), 服务器那边有它的当前 hash... 客户端想要覆盖上去, 先要看自己的 hash 列表里是否包含服务器的 hash, 包含则直接覆盖上去, 不包含则先从服务器下下来, merge 后再覆盖上去...
+不对, 不是 hash, 因为完全可能 对一个资源先加上去, 后删除, 之后又加上去 ...所以服务器还是 git...问题是服务器那边的 merge 绝对不允许出现冲突文件的情况
+不, 不止是不允许出现冲突文件的情况, 连通常的不冲突的 merge 也是不行的(即假如 a/b 两个文件不能共存, A 客户端提交了 a 文件, B 客户端提交了 b 文件, 然后要 merge, 通常的 git 服务是直接 merge 了, 而这个必须是客户端这边 pull 下来, 决定删除其中一个, 再 push)
+
+
+**后端 api prompt**
+后端接口 有没有可能 prompt 呢 ? … 例如  删除一个东西, 它可能造成级联删除或置空, 这里后端就 prompt 一个东西.... 
+其实是返回一个值, 这个值是一个 form schema, 并带上后续的请求地址, 客户端完成 form, 并提交, 则继续 后端的那个函数....
+...
+好像完全没必要... 直接就后端提供两个接口就是: apis.delete_no_cascade -> return error(error 内包含会影响的其他数据) -> apis.delete_cascade
+
+
+**midway and eggjs transaction**
+midway 是依赖注入框架, 它需要自己 init DB, 它的 Sequelize 实例一般写在 models/db.ts 中, 注入它就好. 至于 Model 其实用的就是这个实例, 是 Sequelize 使用 config 里的 modelMatch 方法找到 model 文件, 自己去 require 并 addModel 的
+eggjs 的 Sequelize 实例 在 egg-sequelize 插件里可以看到就是  this.ctx.model 本身
+
+
+**vite multi enviroments config**
+```ts
+// vite.config.ts
+import * as reactPlugin from 'vite-plugin-react';
+import type { UserConfig } from 'vite';
+
+// ? 需要考虑 配置是统一放在 vite.config.ts 中好还是在 代码里根据 APP_MODE 来决定好
+// 统一放在 vite.config.ts 中 有麻烦的地方是 如果遇到特殊的逻辑, 则 APP_CONFIG 要加一个名字很长的属性: 
+// 例如 jinan 环境不显示菜单 a-b-c, 则应所有配置都加属性 is_a_b_c_showing, 只有 jinan 里它为 false
+// 感觉还是 --- 统一放在 vite.config.ts 中好... 而且这种甚至未来可以把配置存进数据库进行管理, 直接在代码里用 APP_MODE 的话, 没法做到这点
+export interface AppConfig {
+  VITE_BASE: string;
+  VITE_OMEGA_KEY: string;
+  VITE_SSO_API_URL: string;
+  VITE_PORTAL_API_URL: string;
+  VITE_OBJ: any,
+}
+const app_configs: Record<string, AppConfig> = {
+  development: {
+    VITE_BASE: '/',
+    VITE_OMEGA_KEY: '',
+    VITE_PORTAL_API_URL: '/portal/api',
+    VITE_SSO_API_URL: '/sso/api',
+    VITE_OBJ: { a:123, b: 234 },
+  },
+  test: {
+    VITE_BASE: '/sso',
+    VITE_OMEGA_KEY: 'omegae18a679d88',
+    VITE_PORTAL_API_URL: '/sso/portal/api',
+    VITE_SSO_API_URL: '/sso/soo/api',
+    VITE_OBJ: { a:123, b: 234 },
+  },
+};
+
+console.log('='.repeat(80));
+const APP_MODE: string = process.env.APP_MODE!;
+console.log('process.env.APP_MODE =', APP_MODE);
+console.log('='.repeat(80));
+
+const app_config: AppConfig = (app_configs as any)[APP_MODE];
+
+const config: UserConfig = {
+  jsx: 'react',
+  plugins: [reactPlugin],
+  base: app_config.VITE_BASE,
+  /**
+   * * define 相比 process.env 或 import.meta.env 优势是 它直接注入的是 js 对象, 而并非字符串...
+   * * 但它仍是字符串替换, 所以是每次使用的值是 deepEqual 的...
+   * 具体说明:
+   * 有 config
+   * define: { a: 1, b: 'b', c: /\w+/, d: { e: /[e]+/ } }
+   * 有 src
+   * log(a);  log(b);   log(c);     log(c);     log(d);           log(d);           log(d.e);
+   * 生成
+   * log(1);  log('b'); log(/\w+/); log(/\w+/); log({e:/[e]+/});  log({e:/[e]+/});  log(/[e]+/);
+   */
+  define: { app_config },
+};
+
+export default config;
+
+
+// src/global.d.ts
+import { AppConfig } from '../vite.config';
+
+declare global {
+  export const app_config: AppConfig;
+}
+
+
+// package.json
+const package_json = {
+  scripts: {
+    dev: 'APP_MODE=dev vite',
+    build_test: 'APP_MODE=test vite build',
+  }
+}
+```
+
+
+
+
+**最好的浏览器 fetch 客户端**
+```ts
+import wretch from 'wretch';
+const retch = wretch('', { credentials: 'include' }).middlewares([
+  next => async (url, opts) => {
+    try {
+      const res = await next(url, opts);
+      res
+        .clone()
+        .json()
+        .then(json => {
+          if (json.errmsg) {
+            // message.error(json.errmsg);
+          }
+        });
+      return res;
+    } catch (error) {
+      // message.error('网络错误');
+      throw error;
+    }
+  },
+]);
+export const portal_api = retch.url(app_config.VITE_PORTAL_API_URL);
+export const sso_api = retch.url(app_config.VITE_SSO_API_URL);
+export const get_user_info = () => portal_api.url('/v1/sso/user-info').get().json();
+export const get_phone_sms = (phone: string) => sso_api.url('/get_phone_sms').query({ phone }).post().json();
+```
+
+
+**mapbox-gl source-layer**
+What's the difference between `source-layer` and `multi sources`? I thought `a source with layers` is in fact just `a group of sources`. I don't know if I'm right.
+
+mapbox-gl react/vue 组件库, 可以加个 `<Event type="moveend" layer={null} listener={xxx} />` === `map.on(type, layer, listener)`
+
+**微前端**
+微前端目前看到的唯一优势是: 渐进式更新技术栈. 然后可以尝试 qiankun 在 开发期和生产期 载入 vite/snowpack 的 esmodule/bundles ...开发期载入 esm 可以看 https://2ality.com/2019/10/eval-via-import.html ... snowpack bundle 可以有 webpack_plugin, 可以配置生成 umd , vite 目前不知
+
+
+**backend apps**
+coturn: https://github.com/coturn/coturn - webrtc
+sipjs: https://sipjs.com/ - webrtc
+easyrtc: https://github.com/open-easyrtc/open-easyrtc
+minio: https://github.com/minio/minio - file manager
+sonic: https://github.com/valeriansaliou/sonic - elastic search
+
+**技术栈 dev packages**
+pg-ts: https://github.com/Ff00ff/mammoth / https://github.com/adelsz/pgtyped (前者方便, 后者完整)
+(https://github.com/chakra-ui/chakra-ui / https://github.com/tailwindlabs/tailwindcss chakra-ui 比 tailwind 有接近的灵活性, 但更多出一些功能组件) + https://github.com/framer/motion (其实 motion 自己就可以完全作为 css 框架, 因为 hover 啥的它也能向下传递)
+chakra-ui === tailwindcss + https://github.com/tailwindlabs/headlessui
+react-router-dom vs takeme
+typestyle + tailwindcss
+https://github.com/banterfm/graphql-crunch
+
+**跨域访问 cookie**
+1. 被访问接口肯定是跨域的, cors 除了 @koa/cors 默认以外, 还得设置 credentials: true 即 cross-origin-allow-credentials: true
+2. 被访问端 之前设置的域名是 Same-Site:None 的, 为达成这一点, 需要被访问端是 https 的
+    如果被访问端是被代理的, 代理到它中间没有 https(显然也不会有), 则需要设置 new Koa().proxy = true, 且收到 header X-Forwarded-Proto: https
+    该 header 一般来源于 nginx 设置 proxy_set_header X-Forwarded-Proto $scheme;
+以及合适的时候, 直接返回 html
+add_header Content-Type text/html; // or default_type text/html;
+return 200 '<html><body>Hello World</body></html>';
+
+```tsx
+// 除了 nginx 直接返回 html 以外(此种方式没有 git 记录, 没有编译构建时的正确性验证), 可以直接生成 dist 时包含一个 xx.html
+// 例如 callback.html = <script></script>
+// 例如 cors.html = <script></script>
+
+// cors.html
+<script>
+// 由外部项目传 APP_ENV, 而不是放进本项目编译构建过程中, 因为目前没找到合适的方式在 vite 内往 html 内注入环境变量
+// 除了双 entry html, 而 entry html 的脚本都是新 http 请求, 没找到内联脚本的方法, 感觉还不如直接 hash
+const APP_ENV = window.location.hash;
+window.onmessage = e => {
+
+}
+</script>
+
+// 多 entry html, 这种方式可以引库, 脚本大小要大一些, 而且是两次请求(html+js), 不过有 ts 保证
+// vite.config.ts
+  build: {
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        nested: 'cors.html'
+      }
+    }
+  }
+// cors.html
+<script type="module" src="/src/cors.ts"></script>
+
+// 其实在 vite 内直接往 html 内注入环境变量也可以, 需要自己写插件
+plugins: [{
+  name: 'xxxx',
+  transform(code, id, ssr) {
+    if (/cors\.html/.test(id)) {
+      return code.replace(/APP_CONFIG/g, JSON.stringify(app_config));
+    }
+  }
+}],
+// 然后在 main.tsx 中 import 该 html 文件
+```
+
+
+**大量系统调用后端改造 - 滴滴智慧交通**
+当前状况: 有大量前端系统(abcde), 每个前端系统都会配一个 nginx(ABCDE), 这些 nginx 把请求导向各种后端 xyz ... nginx 配置有时不在版本管理中, 有时会有系统开发已经过去太久, 新人对系统不熟悉, 产品让做新功能, 接口就直接让新人在老系统里找, 就找到的是浏览器发给 nginx 的请求, 于是会出现 E 依赖 A. 另外大家用的都是 cookie, 跨域访问 cookie 很不方便(cookie 的 httponly 在 react/vue 之后已成历史),  js 也不能在请求一个跨域内容时, 自己设置 cookie 头...它的控制逻辑离真正的发送请求较远. 总的就是很麻烦. 所以有想法:
+弄个 reverse_proxy, 它会把响应的 Set-Cookie 复制一份, 改变名字为 X-Set-Cookie, 把请求的 X-Cookie 改变名字为 Cookie ... X-Cookie 与 Cookie 不可以同时存在(即所有这种写法的 fetch.credentials='omit')... 这样, 后端仍是想怎么写就怎么写(反正我们也控制不了后端), 前端那些旧的项目仍然不用动(Set-Cookie 仍然在, 没有 X-Cookie 时 Cookie 也不会被覆盖), 新项目可以自己灵活管理认证信息
+> 其实这种大量系统, 每个系统好几个部署... 也应该用 hash-history, 而不是 browser-history
+
+
+**AsyncComputed / DvaEffectQueue / VuexActionQueue**
+我们需要确实考虑 vuex 的 action 是否遵从顺序. 会不会出现 `dispatch('fetchFriends', 'jack')` 之后很快又 `dispatch('fetchFriends', 'tom')` 然后是 tom 的返回值先到达, 于是 jack 的响应覆盖了 tom 的响应, 最终出现 用户以为自己看的是 tom 的朋友列表, 但实际看的是 jack 的朋友列表 这种数据错位的情况. 所以我们需要 ActionQueue, 而且在之后 `dispatch('fetchFriends', 'tom')` 时, 把之前 jack 的请求都给 cancel 掉(AbortController), 所以需要 dva 的 `call(api_fn, payload)` 这种代理, 而且完全可能是 进行到哪一步就不能 cancel 了, 则有一个 effect 中多个 call, 且规则不同 `call(api1, {cancelable: true}); call(api2, {cancelable: false})`... 其实还不够, action 还应该是 transaction 的. 其实就是每个 action 都应当成是后端的 抢购api 去写...
+不过 mobx 的 action 本身就在 transaction 中, 而且 action 返回 cancelable_promise, react 事件那边可以在再一次调用时, 把上一次 cancel 掉
+
+**iframe**
+iframe 内能正常跳转, location.href = xxx; 但它不会修改 iframe 的 src... 只有 iframe.contentWindow.history/location 等能体现
+
+
+**解耦**
+https://www.w3cschool.cn/architectroad/architectroad-reverse-dependency-and-decoupling.html#
+case 1: 不太清楚, 自己的理解是: copy paste is better than add a dependency;
+case 2: 主旨是: 做好基础设施;
+case 3: 没什么好说的;
+case 4: 没什么好说的;
+case 5: 增加服务发现, 连接上了一个, 就连接上了所有
+
+case 1/2 是代码层面的解耦, 其实代码层面就没啥解耦可说, 业务逻辑本身是耦合的, 那代码自然也是耦合的, 要解耦, 就是要改变业务逻辑, 整理业务图, 就像一个网图一样, 移动节点位置, 让连线交叉变少. 这里节点其实就是代码
+case 3/4/5 是运维层面的解耦, 其实也是改变了业务逻辑(要改代码适配这种架构)
+
+
+**detect browser import**
+```js
+// https://gist.github.com/ebidel/3201b36f59f26525eb606663f7b487d0
+// https://stackoverflow.com/questions/60317251/how-to-feature-detect-whether-a-browser-supports-dynamic-es6-module-loading
+
+// Feature detect static imports.
+function supportsStaticImport() {
+  const script = document.createElement('script');
+  return 'noModule' in script; 
+}
+// Feature detect dynamic import().
+function supportsDynamicImport() {
+  try {
+    new Function('import("")');
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+// supportsDynamicImport 仍有部分浏览器检测错误
+function betterHasDynamicImport() {
+  try {
+    return new Function("return import('data:text/javascript;base64,Cg==').then(r => true)")();
+  } catch(e) {
+    return Promise.resolve(false);
+  }
+}
+function bestCheckDynamicImport() {
+  let supported = false;
+  try {
+      eval("try { import('foo').catch(() => {}); } catch (e) { }");
+      supported = true;
+  } catch (e) {
+  }
+  return supported;
+}
+```
+
+
+**账户系统**
+```graphql
+type User {
+  # id 是带有业务性质的 username, 全局唯一, 各自抢注. 不允许中文, 例如 'xialvjun'
+  id: ID!
+  # uuid 是表明这个账户属于哪一个真实的人的. 当合并两个 account 时, 只需要把两个 account 的 uuid 设置成一样的就行, 没有其他业务语义
+  uuid: String!
+  # 合并 account 本身并不合并认证信息, 但可以提示用户合并(可选)认证信息
+  password: String
+  email: String
+  mobile: String
+}
+```
+不行, 我们是支持用户修改自己的 username 的, 如果 id 作为其他表的外键, 那修改就要所有表都修改... 所以
+```graphql
+type User {
+  id: ID! # id 是一个业务无意义的 id, 用户无感知, 通常用 uuid, 仅仅用于外键到其他表, 避免用户做个人 id 的变更
+  pid: String! # pid 是表明这个账户属于哪一个真实的人的. 当合并两个 account 时, 只需要把两个 account 的 pid 设置成一样的就行, 没有其他业务语义, 通常用 uuid, 用户无感知
+  # 合并账户本身并不合并认证信息, 但可以提示用户合并(可选)认证信息
+  # 其实认证信息并非一个 User 对应一个 email 的, 完全可以一个 User 对应 n 个 email, n 个 password.... 但因为实际效益不大, 而且可以合并账户, 让一个真实的人有多个 email, 多个 password
+
+  username: String! # 全局唯一, 不允许中文, 例如 'xialvjun', 主要是为了方便其他人输入
+  nickname: String # 全局唯一, 但允许中文, 用户自己展示
+  email: String
+  mobile: String
+  password: String  # 用户可以用 username/nickname/email/mobile + password 来登录, 因为这种情况可能出现 A.username==B.nickname, 如果再密码相同, 就不知道了, 所以 username/nickname/email/mobile 共享一个命名空间
+}
+```
+
+
+**2020 年末 哈尔滨漫展不雅照**
+漫展里女主跟自己的男朋友摆各种床照(做爱)姿势, 引人不适, 被骂.
+为什么男女朋友在街上亲吻, 然后两者对外表现为害羞, 这会让人祝福; 而男女朋友在公共场所摆做爱姿势, 对外表现为不在乎, 会让人讨厌?
+因为前者并非主观意愿上去挑战习俗, 它是情之所至, (如果这个时候有个房间能让我们躲在里面亲热, 我们会很乐意进去, 现在只是不得不在外面亲吻, 我们也很害羞).
+而后者则是挑衅, 大家都遵守这一条规则, 然后有一个人不遵守那规则, 本身这也与大家无关, 只要没有伤害到他人就好, 但是他还主动出来, 那其实就有着挑衅的味道, 就是在说"打破规则的我是聪明人, 而你们都是傻逼". 如果大家能被说服, 那那个人就是带领社会打破规则的英雄, 如果不能, 那那个人就是傻逼, 而且还挑衅大家, 自然应该被大家攻击.
+
+
+**js 原型链**
+<!-- Object.prototype.prototype === undefined;
+Object.prototype.__proto__ == null;
+Object.__proto__ == Function.prototype; // === ƒ () { [native code] }
+Function.prototype.__proto__ == Object.prototype; // === { toString, hasOwnProperty, __proto__: null } -->
+<!-- 有 `{ toString, hasOwnProperty, __proto__: null }` 这样一个对象 0, null 是这个对象的原型, 然后这个对象是其他   -->
+null
+  -> { toString, hasOwnProperty, __proto__: null }: Object.prototype
+    -> Function.prototype
+      -> Object
+      -> Function
+      -> function A: A
+      -> new Function()
+    -> function A: A.prototype
+      -> new A()
+    -> new Object()
+
+
+**async_hooks**
+```ts
+import { createHook, executionAsyncResource, executionAsyncId, triggerAsyncId } from 'async_hooks'
+
+const symbols: symbol[] = []
+createHook({
+  init(asyncId, type, triggerAsyncId, resource) {
+    const cr = executionAsyncResource()
+    for (const sym of symbols) {
+      resource[sym] = cr[sym]
+    }
+  },
+}).enable()
+
+export type Context<T> = { value: T }
+
+export function createContext<T>(value: T, name?: string): Context<T>
+export function createContext<T>(): Context<T | undefined>
+export function createContext(value?: any, name?: string): any {
+  const id = Symbol(name || 'context')
+  symbols.push(id)
+  executionAsyncResource()[id] = value
+  return {
+    get value(): any {
+      return executionAsyncResource()[id]
+    },
+    set value(nv: any) {
+      executionAsyncResource()[id] = nv
+    },
+  }
+}
+
+// async_hooks is in lexical structure
+const delay = (ms: number) => new Promise((res => setTimeout(res, ms)));
+const ctx = createContext(100, 'test');
+let [a,b,c,d,e,f,g] = [executionAsyncResource()] as any[];
+
+(async () => {
+  b = executionAsyncResource();
+  console.log(triggerAsyncId(), executionAsyncId(), ctx.value, );
+  ctx.value = 200;
+  console.log(triggerAsyncId(), executionAsyncId(), ctx.value, );
+  await Promise.all([(async () => {
+    c = executionAsyncResource();
+    console.log(triggerAsyncId(), executionAsyncId(), ctx.value, );
+    await delay(1000);
+    d = executionAsyncResource();
+    console.log(triggerAsyncId(), executionAsyncId(), ctx.value, );
+    ctx.value = 300;
+    console.log(triggerAsyncId(), executionAsyncId(), ctx.value, );
+  })(), (async () => {
+    e = executionAsyncResource();
+    console.log(triggerAsyncId(), executionAsyncId(), ctx.value, );
+    await delay(2000);
+    f = executionAsyncResource();
+    console.log(triggerAsyncId(), executionAsyncId(), ctx.value, );
+  })()])
+  g = executionAsyncResource();
+  console.log(triggerAsyncId(), executionAsyncId(), ctx.value, );
+  // console.log(
+  //   '\n a == b', a == b, 
+  //   '\n b == c', b == c, 
+  //   '\n c == d', c == d, 
+  //   '\n e == f', e == f, 
+  //   '\n c == e', c == e, 
+  //   '\n b == g', b == g,);
+  
+})();
+```
+
+**react fiber**
+http://www.ayqy.net/blog/dive-into-react-fiber/
+https://zhuanlan.zhihu.com/p/26027085
+https://zhuanlan.zhihu.com/p/95443185
+react fiber 就是 调度 react 任务的执行的一个引擎. 它把 react 组件的 各个生命周期, render 甚至事件回调(因为事件回调是虚拟事件系统,所以由 react 控制) 都当成一个任务放进任务列表中, 任务有优先级(同步执行, 下一帧执行, 下一回 render 执行等), 任务有是否可以省略(例如有新的 render 任务的话, 旧的 render 生成虚拟 dom 可以省略), 来分段执行任务, 保证 60 帧不卡顿, 直到得到一次完整的 dom patch, 此时执行 dom patch(此时可能有卡顿), 并设置 current_vdom=刚才计算出来的完整 vdom. 因为, 声明周期已经不是一一对应了, 完全可能 componentWillReceiveProps 执行多次, componentDidUpdate 执行一次
+
+
+**tcp 三次握手, 其实是把 非幂等变成幂等**
+我要连接了 - 我收到了你的连接请求, 已经准备好了, 你连接过来吧 - 连接(并发送数据): 第三次握手可以发送数据
+这种把 非幂等变为幂等 的逻辑, 其实也适用于很多其他地方, 例如 消息的一次且仅一次的传达:
+A发送消息给B - B收到消息, 向 A 发送确认收到消息 - A 收到确认, 向 B 发送确认收到确认 --- 最后 B 收到 A 的确认, 就可以开始执行消息内容了(如果是并发, 则需增加消息 id)
