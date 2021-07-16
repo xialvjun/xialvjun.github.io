@@ -1782,12 +1782,28 @@ minio: https://github.com/minio/minio - file manager
 sonic: https://github.com/valeriansaliou/sonic - elastic search
 
 **技术栈 dev packages**
-pg-ts: https://github.com/Ff00ff/mammoth / https://github.com/adelsz/pgtyped (前者方便, 后者完整)
+pg-ts: ts-sql-query https://github.com/Ff00ff/mammoth / https://github.com/adelsz/pgtyped (前者方便, 后者完整)
 (https://github.com/chakra-ui/chakra-ui / https://github.com/tailwindlabs/tailwindcss chakra-ui 比 tailwind 有接近的灵活性, 但更多出一些功能组件) + https://github.com/framer/motion (其实 motion 自己就可以完全作为 css 框架, 因为 hover 啥的它也能向下传递)
 chakra-ui === tailwindcss + https://github.com/tailwindlabs/headlessui
 react-router-dom vs takeme
 typestyle + tailwindcss
 https://github.com/banterfm/graphql-crunch
+
+
+在这里面找合适的
+react-router-dom
+date-fns dayjs
+ahooks
+mobx
+mobx-react-lite
+@xialvjun/mobx-loading
+react-hook-form
+axios wretch
+react-datepicker
+reactjs-popup @tippyjs/react @popperjs/react @popperjs/core
+ag-grid-react
+atomic-css/atomizer tailwindcss
+
 
 **跨域访问 cookie**
 1. 被访问接口肯定是跨域的, cors 除了 @koa/cors 默认以外, 还得设置 credentials: true 即 cross-origin-allow-credentials: true
@@ -1929,10 +1945,11 @@ type User {
   nickname: String # 全局唯一, 但允许中文, 用户自己展示
   email: String
   mobile: String
-  password: String  # 用户可以用 username/nickname/email/mobile + password 来登录, 因为这种情况可能出现 A.username==B.nickname, 如果再密码相同, 就不知道了, 所以 username/nickname/email/mobile 共享一个命名空间
+  password: String  # 用户可以用 username/nickname/email/mobile + password 来登录, 因为这种情况可能出现 A.username==B.nickname, 如果再密码相同, 就不知道了, 所以 username/nickname/email/mobile 共享一个命名空间 。。。 算了, nickname 就不弄登录了
 }
 ```
-
+对 User 表的所有操作都记录下来, 避免有的人长时间用 email 登录, 后解绑 email, 却又忘记了 username, 导致需要找回账号
+注册时没提供 username, 则默认随机字符串
 
 **2020 年末 哈尔滨漫展不雅照**
 漫展里女主跟自己的男朋友摆各种床照(做爱)姿势, 引人不适, 被骂.
@@ -2040,3 +2057,174 @@ react fiber 就是 调度 react 任务的执行的一个引擎. 它把 react 组
 我要连接了 - 我收到了你的连接请求, 已经准备好了, 你连接过来吧 - 连接(并发送数据): 第三次握手可以发送数据
 这种把 非幂等变为幂等 的逻辑, 其实也适用于很多其他地方, 例如 消息的一次且仅一次的传达:
 A发送消息给B - B收到消息, 向 A 发送确认收到消息 - A 收到确认, 向 B 发送确认收到确认 --- 最后 B 收到 A 的确认, 就可以开始执行消息内容了(如果是并发, 则需增加消息 id)
+
+
+**stackoverflow 后端开发 DI, controller,service,repository is bad**
+```md
+Why not just `router + handler + single_instance_db_pool` pattern?
+
+Many people around me say the controller-service-repository pattern is MVC.
+
+As far as I know, the pattern MVC(model view controller) is just used for UI programming. UI programing needs states of tree shape, MVC fits it well.
+
+But doesn't the backend programing have no state? HTTP is a stateless protocol. Yeah we have session, database to store the state, but they are totally different from UI state which is in a tree shape.
+
+The UI state machine accept messages from anywhere include trunk/branch/leaf of the tree, and it needn't to worry about concurrency.
+
+The backend state machine accept messages from just one point, then split by the router, it's flat.
+
+----------
+
+Then if the controller-service-repository pattern is not something like MVC, why do people use it?
+
+In my opinion, `oop class` is used to create a state machine, so things like React suits it well, but things like controller/service/repository have not state, we usually use it just for its static functions even though we didn't add the `static` keyword. Don't you declare them singleton scope in Spring?
+
+Sorry, I didn't ask a very clear question. I just think the backend development should be a request context flowing through a series of utils functions then getting the response, rather than so many concepts controller, service, repository, DI and many others.
+```
+
+
+**politics**
+不知道 MMT是什么，但如果是跟自己想的这一套模式类似，那我完全不知道它为什么不行。
+
+国家为所有人提供基本工资，这份工资可以让大家维持基本的低尊严生活。有人想要追求高尊严生活，会去创业或工作，创造价值(这里创造的价值养活了所有人)。国家，一需要对大家执行阶梯税率，从而控制市场中流通的钱，避免物价变动(其实变动也没太大关系，基本工资也相应变动就行)；二需要严格限制资产流出(如果地球成为统一的国家，那也不存在资产流出了)；三发展科学技术，提高生产效率；四灵活调整低尊严1生活与高尊严生活的差距，激发大家工作动力(其实在生产效率足够的今天，感觉一部分人为了实现自己的人生价值，去创造的价值都足够养活全人类)。
+
+举个例子就一个人一生需要十万斤大米，一斤大米一块钱。我种了100万斤大米，扣税后得到50万块，其中十万块我买大米了，另外40万我别墅游艇(这就有税收的那50万养活了5个人)，然后别人卖我的40万的别墅游艇，他只拿到20万，另20万也是税收(养活了2个人)。
+----
+最近听到 现代货币理论(MMT) 这个词，模糊的感觉它能直接带领社会进入社会主义中期。但是网上看到的文章都是从钱，负债，央行，财政这些表面的东西去解释，东西很多，概念很复杂，看得模模糊糊地。想着你们能不能从一般价值(例如大米)，社会矛盾以及暴力机构 的角度去解释下 MMT。
+----
+全民发钱，让富人的负债萎缩，反而相当于富人赚得更多，因为本质上富人其实是自己的净资产为负的人。
+但其实这个理由阻止全民发钱是行不通的。
+1. 让负债萎缩的条件是通胀，全民发钱不一定引发通胀。
+2. 全民发钱，我们也可以看做全民向国家借钱，这样就能为不习惯负资产的人也提供了负资产。让大家跟富人一样负资产。
+
+
+
+
+**自己在 stackoverflow 上问为什么 spring 类框架都是 controller service repository 模式，而不是 router handler db_pool 模式，遭删除**
+建立三种类型的提问网站，1. 具体知识的提问网站，类似 stackoverflow；2. 具体逻辑的提问网站，用户可以说明一个问题，答者提供算法（例如 web-guard 里的批量定时轮询任务）；3. 观点争论的网站（所有人投票，随时可以改变投票，可以增加候选，每个候选可以有自己的区，里面有文章支持自己的观点，投票该观点的人可以投票置顶文章，每人有 5 票，可以置顶 5 篇文章）（可以是甜咸之争，可以是空格 tab 之争，可以是 spring DI 模式 vs no DI），让知识和观点沉淀出来，而不是淹没在争吵中。
+
+
+**promise**
+```ts
+function createPromise<T>() {
+  let resolve: (value: T | PromiseLike<T>) => void = null as any;
+  let reject: (reason?: any) => void = null as any;
+  let promise = new Promise<T>((_res, _rej) => {
+    resolve = _res;
+    reject = _rej;
+  });
+  return { resolve, reject, promise };
+}
+function makeCancelable<T>(p: Promise<T>) {
+  const wp = createPromise<T>();
+  p.then(
+    value => wp.resolve(value),
+    reason => wp.reject(reason),
+  );
+  const cancel = () => {
+    wp.resolve = () => {};
+    wp.reject = () => {};
+  };
+  (wp.promise as any).cancel = cancel;
+  return wp.promise as Promise<T> & { cancel: typeof cancel };
+}
+```
+
+
+// parallel {
+// 	loop {
+// 		const conn = socket.accept();
+// 		Thread.run(handle, conn);
+// 	}
+// }
+
+// run_concurrently([myfunc, anotherfunc])
+
+// async with trio.open_nursery() as nursery:
+//     while True:
+//         incoming_connection = await server_socket.accept()
+//         nursery.start_soon(connection_handler, incoming_connection)
+
+
+# 如何惩罚炒房者
+https://www.zhihu.com/answer/85475145
+可以按全民过去买房卖房上赚的钱，给全民发钱，在房产上赚的多的，就发钱少。以此惩罚炒房者。或许有人想房子可以立马涨价啊，但其实这个发钱操作是在房价崩盘后实施的，而国家其实很容易就能让房价崩盘。另外还要发钱不影响其他资产持有者，可以对资产评估，等比增加钱。
+当然，如果是纯共产主义，那其实发钱应该是为了惩罚持有任何资产的人的，不仅仅指房产。
+
+# RestApi Schema
+有的公司还不能迁移到 graphql，可以弄个代理层，给 代理层配置 类似 graphql.schema 的配置。。。
+然后客户端请求代理层，服务端开发者自己调试接口时也用那个代理层调试，从而职责匹配。。。
+接口开发都 put(幂等) 和 post(非幂等)
+> 有三种方案
+  1. 让后端接口按统一的规范写(url上没有参数，url没有深层调用，所有接口都是 post，接受 json 参数，返回值结构 {data:T,error:string})。这种不能处理旧接口，不过也可以理解为旧接口不用管，即已经有的能正常运行的代码，就不要乱重构了。这样形成一个命令行程序，只要置顶 baseUrl 就好了
+  2. 写 node 层，去做参数转换和响应转换。
+  3. 写个网页 UI，在 UI 上操作哪个请求指向哪个连接，各种转换逻辑。甚至可以变更 graphql 的概念，例如通用响应结构，继承通用响应结构。
+   >  2 有问题就是 这会让公司里的人都认为这 node 代码应该由前端去写，如此就做不到职责匹配了。
+
+
+**如果没有共同爱好的话**
+就算能开始聊, 那之后要聊什么呢....
+
+
+**掌控气象**
+
+高空气球风力发电机，搜索到有类似的想法 https://patents.google.com/patent/CN101476546A/zh，用这种东西获取全球空气流动信息。
+弄许多可快速移动和部署的大风扇（风力发电机？）根据全球空气流动信息，四两拨千斤，让全球风调雨顺。
+http://blog.sciencenet.cn/blog-274385-828801.html
+
+
+**react useImmer**
+```ts
+function useImmer<S>(initialState: S | (() => S)) {
+  const [s, ss] = useState(initialState);
+  const immer = useCallback(
+    <T extends any[]>(fn: (s: S, ...events: T) => any) => (...events: T) =>
+      produce(s, s => {
+        fn(s as S, ...events);
+      }),
+    [s],
+  );
+  return [s, immer, ss] as const;
+}
+```
+
+
+**myown forgo**
+```tsx
+const { render, onBeforeMount, onMounted, onUnmounted, onBeforeUpdate, onUpdated, ...xxx } = forgo;
+// update 分内部自己的 update 和外部收到新 props 的 update，以及 provide 收到新值的 update，对应的生命周期也许需要区分开。
+// 一样可以有 watch，哪怕并非响应式，因为 watch(props => props.a) 的形参 props 会被调用两次
+const A = (init_props, ctx) => {
+  const { refresh } = ctx;
+  watchProps(props => props.a, (current_a, previous_a, invert) => {});
+  let local_state = 1;
+  watch((props) => local_state, (current_counter, previous_counter, invert) => {});// 如果是这种，那就是不区分三种形式的 update
+  // return (props) => <div></div>  // 1
+  // return (props, ctx) => <div></div>
+}
+
+const B = (init_props, init_data_ctx, self_ctx) => {
+  const { update } = self_ctx;
+  init_data_ctx[user_symbol];
+  let ref = null;
+  return {
+    render: (props, data_ctx) => <div></div>,
+    ref: (ele) => ref = ele,
+    instance: {}
+  }
+}
+```
+
+
+**typescript macro**
+atomic css / windicss / tailwindcss 这些可以用 macro 做
+react 渲染 svg，根据 color 属性，预先分析 svg，确定 color 用在哪里，把 svg 转变为 react 组件
+
+
+**问面试官的问题**
+反向过滤：
+怎么看低代码平台
+自己认为的最佳技术栈实践 - 数据库-后端(ts-sql-query, graphql)-前端(react-mobx)
+微前端
+spring- controller，model，dao，service，view 。。。。。
+serverless
