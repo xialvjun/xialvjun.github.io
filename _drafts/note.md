@@ -2228,3 +2228,12 @@ react 渲染 svg，根据 color 属性，预先分析 svg，确定 color 用在�
 微前端
 spring- controller，model，dao，service，view 。。。。。
 serverless
+
+
+
+**UI编程思想**
+1. 数据变形，子状态定义越晚越好
+2. 变形后数据，子状态 使用越广越好
+3. js比模板好
+
+3 绝对正确，1 比 2 更重要
