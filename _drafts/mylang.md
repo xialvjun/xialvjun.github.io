@@ -1672,3 +1672,69 @@ Just my own guess. Don't know if it's right.
 // https://cn.pornhub.com/view_video.php?viewkey=ph5d914ed1ba9dd
 // https://cn.pornhub.com/view_video.php?viewkey=ph5e30ee595e658
 // https://cn.pornhub.com/view_video.php?viewkey=ph605519dab6fce
+
+
+**完全的 duck-type, 由 symbol 来区分类型**
+其实就是 显式比隐式好 的逻辑. 不然由 type-name 来区分类型, 其实一样是 type-name 自带一个 symbol, 这对于只需要 duck-type, 不需要区分类型的场景还浪费了内存
+
+symbol 可以定义在全局, 也可以定义在函数运行时, 这样就可以动态生成新类型了, 而无需别的状态去做判定
+
+因为用 symbol 来区分类型, 所以对于 tuple 类型, 必然是 tuple 与 dict 定义是一体的, 不然 symbol 无法放进去, 即 const s = symbol(); type A = (s:nil, number, string);
+
+小括号做类型, 中括号做取属性, 大括号做流程
+
+// nil 占 0 内存, 在编译期判定
+// i8 | nil 占 2 字节内存, 一个给 int8, 一个给 union? 好像还不对, union 在编译期判定的?
+// 内存的事情再说, 先想着把 mylang 编译成 js 再说, 至于说编译为 c, 内存要尽可能优化, 取决于 mylang 的类型系统有多好
+
+注意尽管用了 symbol, mylang 也与 js 是完全不同的, js 里属性名是字符串, 而 mylang 里属性名是编译期偏移量. 那 symbol 不是编译期偏移量, 它能是什么 ?
+是反向引用? var a = Symbol(); var b = {[a]: 123,x:234}; 对于这种, a 内存里是一个 map, b 内存里只有 {x:234}, 而 a 的 map 里有 { [addr_of_b]: 123 } 这样?
+
+
+**堆内存就是一种类型**
+let a = box(i8<1e6>())
+上面数组长度属于 泛型. 因为定长数组本就是编译期确定的, 所以作为泛型正好. 即所有类型后面都可以接数值泛型, 表示数组... 好吧, 太特殊了, 还是用中括号吧
+let a = box(i8[1_000_000]()) 
+值字面量是放进 栈 还是放到 堆上, 是看它直接被怎样使用.
+操作堆上的值不需要 解地址, 因为 堆 就是类型, 编译的时候直接就知道因为是堆类型, 所以先解地址,然后属性偏移量,再操作.
+但这样也有问题就是不支持 地址操作, 对于一些 unsafe 的场景应该会有问题
+
+
+**编程语言字符样子**
+有类似的字符，例如 12345 的 1 和 list 的 l， 这是由字体去控制的，而不是由编程语言控制；
+有不可见的字符，或者别的控制字符，这对于所有的字体而言都一样，它不是字体的问题，而是 utf8 的问题，这可以由编程语言去控制不许有；
+至于别的什么 中文标识符，emoji标识符，都应该支持。其实，符合语言本身的标识符，比不准确的翻译更好。
+
+
+**tuple and dict**
+好像专业说法是 tuple/record or list/dict or array/map
+另外，type A = (i8, name:str, i16) , 则 A.1 是 i8，A.2 是 str，A.3 是 i16，为什么 name 要占一个位置，只是因为 name 只是一个偏移量。
+另外，tuple 从 1 开始 既是与 array 区分，也是符合常人心里， a.10 就是至少有 10 个成员。除 tuple 外，标识符不可为数值。tuple 的成员用数值去取也只是用 十进制，不需要别的啥进制，不需要前面可为 0（就首数字不可为0），因为这个数值只是为了给人命名用，人习惯非零的10进制
+
+**多层解构**
+这是 rust 代码
+`async fn delete(db: Data<&Database>, storage: Data<&Storage>, Path(file_id): Path<i32>) -> Result<impl IntoResponse> {}`
+本来我们想着解构是统一的，类似 ts: `{a:{b,c},d}: {a:{b:string,c:number},d:boolean}` 类型要统一写到一块儿去
+但是 rust 打破了这点，本身 函数参数就可以理解为对 tuple 的解构，然后具体的某个参数还可以继续解构，即对应 ts 语法应为: `{a:{b:string,c:number},d:boolean}`
+对于 tuple 参数可以是 `({b,c},d): ({b:string,c:number},boolean)`, 对应改为 `({b:string,c:number},d:boolean)`
+然后解构有两个选择，是解构必须全部解构，还是没解构到的就默认丢掉。前者可以加个手工丢弃的关键字 `_`, 然后如果加 `_` 那要决定是区分 `_*` 和 `_+` 还是不区分。
+感觉还是解构必须全部解构，但不用区分 * 和 +，所以加个 `_` 就行。
+那上面的多层解构看起来某些时候跟定义一个 dict type 没啥区别，因为 dict type 本身就有名字，如果是 tuple type 的话，就要赋予名字了。
+另外，rust 的 tuple 是从 0 开始的
+其实按我这里的理念，上面 rust 代码应该是 `(db: Data<&Database>, storage: Data<&Storage>, Path(file_id: i32))`
+
+
+**错误不可以隐式忽略，但可以显示忽略**
+https://news.ycombinator.com/item?id=30611367
+C 语言 printf 会打印到 stdio，这可能会出错，但 printf 却不会报错，不需要 try-catch，而是返回一个非 0 的值，程序员很容易直接忽略值。
+这里就应该让它类似 rust:
+```
+println!()?; // 如果出错，则会函数停止 并返回 Error 到外层
+println!().unwrap();  // 如果出错，则函数停止，panic。。。。 这样看，panic 跟返回 Error 没太大区别。。。主要 panic 返回的是一个字符串 error，panic 不需要写返回值类型。但如果要求所有的 Error 都可以字符串化，并且函数能自动推导返回值类型，则可以不用 panic 了
+println!().ignore();  // 如果出错，则会被忽略，这是显示忽略
+println!(); // 这样有个返回值可能是 Error，直接被忽略了，编译报错
+let n = println!(); // n 是一个 Result，这个 n 如果不做处理，就会编译报错
+```
+
+但是好像 panic 留着更好。有些东西确实会出错，但是为了开发体验，真的就是忽略。 i32 + i32 可能会超出 i32 范围，为此还要 (i32 + i32)? 也太麻烦了，这个时候就直接 panic 好了
+或者不留 panic, 这些非常简单的算术 默认溢出会导致一个确定的值（本身已经失去了业务意义）。如果想要运行时检测，则用特殊方法。至于运算符重载，也是不允许返回 Result 的，不然有的重载不返回 Result，有的返回 Result，不一致。可以有自己的有名字的函数去实现 运算符功能，并返回 Result

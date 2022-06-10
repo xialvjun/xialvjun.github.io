@@ -310,6 +310,8 @@ JonirRings-切图仔-成都  11:25:08
 
 # 数据库冗余外键该不该要
 https://rodgersnotes.wordpress.com/2010/09/18/redundant-foreign-key/
+> 其实这个就是最佳方法：A-a_id, B-(b_id,a_id), C-(B.b_id, B.a_id)，也就是 C 上的 a_id 连接的是 B.a_id 而非 A.a_id（要注意是 C(a_id,b_id) 整体连接 B(a_id,b_id)，是联合外键），这样，冗余有了，方便查询，单一数据来源也有了，数据库能正常确保维护数据正确性
+
 https://dba.stackexchange.com/questions/68951/is-it-recommended-to-have-redundant-foreign-key-columns
 https://stackoverflow.com/questions/40553231/storing-redundant-foreign-keys-to-avoid-joins
 a
@@ -1937,7 +1939,7 @@ type User {
 ```graphql
 type User {
   id: ID! # id 是一个业务无意义的 id, 用户无感知, 通常用 uuid, 仅仅用于外键到其他表, 避免用户做个人 id 的变更
-  pid: String! # pid 是表明这个账户属于哪一个真实的人的. 当合并两个 account 时, 只需要把两个 account 的 pid 设置成一样的就行, 没有其他业务语义, 通常用 uuid, 用户无感知
+  pid: String! # pid 是表明这个账户属于哪一个真实的人的. 当合并两个 account 时, 只需要把两个 account 的 pid 设置成一样的就行, 没有其他业务语义, 通常用 uuid, 用户无感知 。。。 或者改名叫 human_id 长度长些无所谓，含义要准确
   # 合并账户本身并不合并认证信息, 但可以提示用户合并(可选)认证信息
   # 其实认证信息并非一个 User 对应一个 email 的, 完全可以一个 User 对应 n 个 email, n 个 password.... 但因为实际效益不大, 而且可以合并账户, 让一个真实的人有多个 email, 多个 password
 
@@ -1946,6 +1948,7 @@ type User {
   email: String
   mobile: String
   password: String  # 用户可以用 username/nickname/email/mobile + password 来登录, 因为这种情况可能出现 A.username==B.nickname, 如果再密码相同, 就不知道了, 所以 username/nickname/email/mobile 共享一个命名空间 。。。 算了, nickname 就不弄登录了
+  # 两种方式：1. 用户输入 nickname/email/mobile，自动判断它是什么，然后 username 随机；2. 判断输入的是 nickname，如果字符简单，就放到 username 上，如果不简单，就放在 nickname 上，同时 username 随机，email/mobile 也 username 随机；---- 还是 1 吧
 }
 ```
 对 User 表的所有操作都记录下来, 避免有的人长时间用 email 登录, 后解绑 email, 却又忘记了 username, 导致需要找回账号
@@ -2251,3 +2254,531 @@ serverless
 可是，如果是说是为了更好的人生体验而选择知识，似乎又是世故，是承认自己弱小，承认失败。
 但另外也有问题是 怎样才能叫人生经历足了呢？ 1.赤子之心，2.跟经历过人生起伏之后的看得开，3.以及经历人生起伏之后仍然保持的赤子之心，到底哪个更珍贵。
 也许1是幼稚，也许2是失败，也许3是另一种失败和幼稚。似乎一切只能回到结果论。可如果是结果论的话，没有赚到钱的自己凭啥让人喜欢。这同时又是另一个结果论，没人喜欢自己的世界，自己也不用去喜欢这个世界。
+
+
+**分层架构**
+https://www.quastor.org/p/software-architecture-patterns
+好多人喜欢说分层架构是，要有 dao 层，有 service 层，有 controller 层。
+但其实那恰恰不是分层。
+软件设计中，最明显的分层是 前后端分离。
+然后 前后端分离 会有一个接口出入口。
+分层架构，应该层与层之间要有个接口出入口。最终就是每一层就是一个单例，最终整个应由有三四个单例对象来完成功能。
+所以后端弄分层，就应该是三个单例对象完成功能，server -> router -> db。
+
+
+**各种管理系统的默认状态的选择要注意**
+例如一些车辆管理系统，车上有 IOT 设备，连接互联网，发送自身状态到系统上。系统上会显示车辆是在线还是离线。
+但是因为各种原因，例如后端脏数据，前端部分接口请求出错 等等原因，导致有车，但没有信息知道车是在线还是离线。但是前端始终要显示一个状态，哪怕是前端自己的状态。
+这种时候，要么增加个 未知 状态，要么有个默认状态。默认离线 一般应该比 默认在线 好。但编写代码的时候可能就有人没有注意 默认状态的选择 这一点。
+
+
+**roxy**
+jsx 的 props 还是一个 T extends {key?:PropertyKey}, 而不是 any, 因为要放 key, 而且 new_jsx 也不是把 key 放进别的地方, 它甚至是把所有的东西都放进 props 里, key, ref, children
+
+
+**requestAnimationFrame**
+```js
+console.log('a');
+requestAnimationFrame(() => console.log('b'));
+requestAnimationFrame(() => console.log('c'));
+Promise.resolve().then(() => console.log('d'));
+console.log('e');
+// a e d b c;
+```
+
+```js
+console.log('a');
+requestAnimationFrame(() => {console.log('b');Promise.resolve().then(() => console.log('bb'));});
+requestAnimationFrame(() => console.log('c'));
+Promise.resolve().then(() => console.log('d'));
+console.log('e');
+// a e d b bb c;
+```
+
+```js
+console.log('a', performance.now());
+requestAnimationFrame(() => {console.log('b', performance.now());console.log('bb', performance.now());});
+requestAnimationFrame(() => console.log('c', performance.now()));
+console.log('d', performance.now());
+// a 2627.199999988079
+// d 2627.2999999821186
+// b 2630.5
+// bb 2630.5999999940395
+// c 2630.5999999940395
+// OR
+// a 51107.29999998212
+// d 51107.5
+// b 51113.79999998212
+// bb 51113.79999998212
+// c 51114
+// OR
+// a 154118
+// d 154118.19999998808
+// b 154130.29999998212
+// bb 154130.40000000596
+// c 154130.5
+// 说明 --- 错，这没有说明什么，raf 和 performance 不能用 console.log 来测试，console.log 是阻塞式 io
+```
+
+
+console.log('a', performance.now());
+requestAnimationFrame(() => {console.log('b', performance.now());});
+requestAnimationFrame(() => console.log('c', performance.now()));
+console.log('d', performance.now());
+
+```js
+var pn = [];
+pn.push(['a', performance.now()]);
+pn.push(['b', performance.now()]);
+pn.push(['c', performance.now()]);
+pn.push(['d', performance.now()]);
+pn.push(['e', performance.now()]);
+pn.push(['f', performance.now()]);
+console.log(pn);
+// 全部一样
+```
+
+var pn = [];
+pn.push('a');
+requestAnimationFrame(() => pn.push('b'));
+requestAnimationFrame(() => pn.push('c'));
+Promise.resolve().then(() => pn.push('d'));
+pn.push('e');
+console.log(pn);
+
+```js
+var pn = [];
+pn.push(['a', performance.now()]);
+requestAnimationFrame(() => {pn.push(['b', performance.now()]);pn.push(['bb', performance.now()]);});
+requestAnimationFrame(() => pn.push(['c', performance.now()]));
+pn.push(['d', performance.now()]);
+console.log(pn);
+// 0: (2) ['a', 633232.099999994]
+// 1: (2) ['d', 633232.099999994]
+// 2: (2) ['b', 633246.6999999881]
+// 3: (2) ['bb', 633246.6999999881]
+// 4: (2) ['c', 633246.6999999881]
+```
+
+```js
+var pn = [];
+pn.push(['a',performance.now()]);
+requestAnimationFrame(() => {pn.push(['b',performance.now()]);Promise.resolve().then(() => pn.push(['bb',performance.now()]));});
+requestAnimationFrame(() => pn.push(['c',performance.now()]));
+Promise.resolve().then(() => pn.push(['d',performance.now()]));
+pn.push(['e',performance.now()]);
+console.log(pn);
+// 0: (2) ['a', 932672.6999999881]
+// 1: (2) ['e', 932672.6999999881]
+// 2: (2) ['d', 932672.7999999821]
+// 3: (2) ['b', 932679.7999999821]
+// 4: (2) ['bb', 932679.7999999821]
+// 5: (2) ['c', 932679.900000006]
+```
+
+```js
+var pn = [];
+pn.push(['a',performance.now()]);
+Promise.resolve().then(() => pn.push(['b',performance.now()]));
+Promise.resolve().then(() => pn.push(['c',performance.now()]));
+Promise.resolve().then(() => pn.push(['d',performance.now()]));
+pn.push(['e',performance.now()]);
+console.log(pn);
+// 0: (2) ['a', 1022847.2999999821]
+// 1: (2) ['e', 1022847.2999999821]
+// 2: (2) ['b', 1022847.5]
+// 3: (2) ['c', 1022847.5]
+// 4: (2) ['d', 1022847.5]
+```
+
+
+**VR 系统界面设计**
+我们有很多种窗口，有类似 Oculus Quest2 在 2021 年一样的界面，用手柄光标去指向操作，然后这种界面还被设定为相对现实定位，我们可以走近它。
+还应该可以有窗口相对人身定位（窗口在我的右侧，我转向后，它仍在我的右侧，我横着向右走，它也仍在我的右侧），用手指触碰操作。
+推荐操作是：
+VR 中，五指张开代表松开，五指握实拳代表握住，则之后被握住的东西跟手的位置以及手背平面的方向应保持一直。如果物体不可扭转，但左右手同时操作造成扭转，或者物体不可放大缩小，但左右手同时操作造成放大缩小，则根据幅度智能判断（或者用户设定惯用手）。用户同时会有四只手，两只自己的手，另外两只是用户伸直手臂仍不能触碰到远方时，自动延长的虚拟手臂（不一定要显示成手臂，可以就一条光线，甚至不显示，但手要显示成手的样子，同步真实手的手势），自动延长到“可判物”为止，可判物一般是窗口，ar 中还可以是地面，墙壁（隔空在墙壁上画画）等。手收回就等比收回。虚拟手延迟显示，手要摸的东西在臂长范围内，就没有虚拟手。
+窗口控制：
+现实定位窗口处于远处，双手伸直，五指张开放窗口两侧，握实，开始定位窗口（其实本可以单手伸直就去定位的，但窗口本身也有手势操作，尽管手势操作是先经过系统，后进入应用，但避免冲突，系统还是尽量少拦截操作，所以只双手才定位窗口），双手缩至胸前（此时虚拟手消失，窗口也定位到胸前，变更为由实体手操控窗口了，且这个过程中进大远小，窗口也缩到双手距离的大小），双手把窗口放到一个位置，向两侧转动手，像拧螺丝一样，双手张开（即松开物体），此时窗口就相对身体定位了（回到胸前再推出去就是相当于从身体延申出去一条梁，窗口是固定在梁上），如果想把窗口按身体定位，但超出臂长，可以手抓住梁再往外抽（拧螺丝后，一只手不松开，另一只手松开后，去抓梁），或者所有相对身体定位的元素都有可见的梁。
+相对身体定位窗口变更为 现实定位窗口，只要砍掉梁就可以了
+
+
+**async generator make observable**
+```ts
+async function* makeObservable(observable) {
+    const defers = [makeDefer()];
+    observable({
+        next: v => {
+            defers[defers.length - 1].resolve(v);
+            defers.push(makeDefer());
+        },
+        throw: e => {
+            defers[defers.length - 1].reject(e);
+        },
+        return: v => {
+            defers[defers.length - 1].resolve(v);
+        },
+    });
+    while (1) {
+        const defer = defers[0];
+        if (!defer) return;
+        const value = await defer;
+        defers.shift();
+        yield value;
+    }
+}
+function makeDefer<T = any>(): Promise<T> & {
+    resolve: (value: T | PromiseLike<T>) => void;
+    reject: (reason?: any) => void;
+} {
+    let defer = null;
+    const p = new Promise<T>((resolve, reject) => {
+        defer = { resolve, reject };
+    });
+    Object.assign(p, defer);
+    return p as any;
+}
+var observable = makeObservable(observer => {
+    const ws = new WebSocket('adsg');
+    ws.onopen = () => {
+        ws.send('dasfadsg');
+    };
+    ws.onmessage = observer.next;
+    ws.onerror = observer.throw;
+    ws.onclose = observer.return;
+});
+
+for await (const m of observable) {
+    console.log(m);
+}
+```
+
+注意，generator 最后 return 的值不会被 forof 拿到。虽然可以手动 .next 调用拿到（在 g.done 第一次等于 true 的时候）。即
+https://stackoverflow.com/a/37202835/3127028
+```js
+function* ggg() {
+  yield 1;
+  yield 2;
+  yield 3;
+  return 4;
+}
+for (const n of ggg()) {
+  console.log(n); // 只会输出 123，不会输出 4。目前不知道这是什么考量
+}
+```
+
+
+**id生成: uuid 赛高**
+好多后端面试都喜欢问 id 生成策略，然后来 雪花id(snowflake) 算法，1比特浪费，41比特毫秒时间戳，10比特机器码，12比特随机（应该是随机而不是顺序）
+但其实 uuid 本身就有这功能，还更好：
+uuid 分 v1, v3, v4, v5。其中对应雪花算法的就是 v1: 时间戳 + 机器mac地址（这不比手动分配的机器码方便） + 随机（无非是占用空间大一倍而已，uuid 是 128bit，用一个 u128 表示，雪花 是 64bit）。另外，uuid v4 是完全随机的 128bit， v5 是做衍生id （用一个 字符串 + 另一个 uuid 来生成，例如 一个用户有一个 id，然后一个用户只有一个钱包，则 钱包id=v5('钱包',用户id)），至于 v3 其实是跟 v5 一样的，不过 v5 用的 sha1，v3用的 md5，即 v3 过时了
+
+
+**新网络架构，解决 ddos**
+车小胖，刚才看到 ddos 攻击，然后有个想法。ddos 攻击根本原因是：网络中间设备都假定流量是好的，同时流量接收方也没有证据证明自己就是流量接收方，从而提前让前面的中间设备帮忙拒绝流量。可能有点模糊，不过继续看。要解决那上面的问题，我们可以用 非对称加密 来创建网络（没有 ip 协议了）。加入网络前，电脑自己生成一对公私钥，然后在路由器上注册自己（就是把公钥和网口绑定）。然后如果来了 ddos 流量，电脑判断出这是恶意流量，可以拜托上层路由直接把来自于他且发给自己的流量给拒绝掉。电脑只需要签名一条这样的命令并发出去，路由器就可以操作了。
+现在问题是掩码怎么办，没有掩码，那路由表就太大了，不可能实现
+
+
+**rust类型**
+```rust
+trait A {
+    fn a(&self) -> usize;
+}
+impl A for String {
+    fn a(&self) -> usize {
+        self.len()
+    }
+}
+
+trait B {
+    fn b(&self) -> usize;
+}
+// 不可以 impl B for impl A {}
+// 不可以 impl B for dyn A {}
+// 但可以 impl B for &dyn A {} 或 impl B for Box<dyn A> {}，但 Box<dyn A> 要经过一次强制类型声明
+// 但其实最正确的做法应该是：这种不需要再经过一次强制类型声明
+impl<T: A> B for T {
+    fn b(&self) -> usize {
+        self.a() * 10
+    }
+}
+fn main() {
+    let s = String::from("Hello, world!");
+    println!("{}", s.b());
+}
+// 上面的强制类型声明的问题应该还是自己对 rust 不熟悉的问题，但要说的是：impl A 作为类型时，其实就是泛型的缩写。也就是说“泛型有三种写法”：
+// 1. `fn a(arg: impl Tr) {}` or `fn a() -> impl Tr {}`; // 最简便，但只能 impl 一个 trait 。。。呃，其实可以多个，例如 sqlx::error::Error 有 `Tls(Box<dyn Error + Send + Sync + 'static, Global>)`
+// 2. `fn a<T: Tr>(arg: T) {}` or `fn a<T: Tr>() -> T {}`; // 能 impl 多个 trait, 例如 <T: Ta + Tb>
+// 3. `fn a<T>(arg: T) where T: Tr {}`; // 除了能 impl 多个 trait, 还能间接判断, 例如  `fn a<T>(arg: T) where Option<T>: Debug {}`
+// 但要注意，3 是能间接判断，却不能反向判断，不能写成 `fn a<T>(arg: T) where String: T {}`
+// 根本原因是 rust 是完全与内存相关的，trait 对于 rust 并非一个类型，只有 struct 才是类型
+// 然后 一个类型不能重复实现同一个 trait(否则运行一个函数都不知道运行哪一个)。。。 所以 type A = Option<AnyMap>; impl XXX for A {} ...这种代码说不定就错了，因为完全可能别人也写了 impl XXX for Option<AnyMap>;
+```
+
+
+
+**react.setState 的坑**
+https://www.jianshu.com/p/56711ae6c4a0
+
+**leaflet / mapbox-gl / openlayers / cesium**
+leaflet 最小，其次 mapbox-gl 或 openlayers，至于 cesium 最大（不过不知道 cesium 是做啥的）
+https://www.jianshu.com/p/ae73b3990259
+
+
+# WebSocket 界面
+WebSocket 在界面上应该要有显示连接状态的地方，这样前端代码才不至于无法选择连接错误发生多少次后才停止重试。而且像某些协议里的连接重试时间不断变长，其实体验也不好
+
+# 傻逼的 click 延迟
+```vue
+<script setup>
+import { ref, shallowRef, watch, getCurrentInstance } from 'vue';
+
+const num = ref('');
+
+const data = [
+  46, 93, 47, 37, 0, 67, 38, 35, 4, 67, 28, 13, 49, 64, 83, 16, 4, 80, 67, 35,
+  30, 34, 60, 42, 61, 67, 86, 83, 11, 46, 0, 17, 0, 83, 37, 1, 6, 28, 70, 50,
+  14, 37, 98, 32, 63, 5, 69, 37, 95, 6, 90, 40, 17, 27, 52, 87, 82, 72, 68, 56,
+  86, 52, 27, 32, 26, 21, 70, 71, 37, 89, 43, 81, 91, 20, 47, 96, 68, 85, 84,
+  33, 12, 20, 55, 12, 42, 16, 66, 57, 41, 76, 78, 41, 3, 56, 7, 32, 57, 64, 62,
+  3,
+];
+
+const list = shallowRef();
+const search = (txt) => {
+  if (!txt) return (list.value = undefined);
+  list.value = data.filter((v) => v > (parseInt(txt) || 0));
+};
+
+const select_item = (item) => {
+  alert('select_item' + item);
+};
+
+const ins = getCurrentInstance().proxy;
+const blur1 = () => (list.value = undefined);
+const blur2 = () => ins.$nextTick(blur1);
+const blur3 = () => setTimeout(blur1);
+const blur4 = () => setTimeout(blur1, 10);
+const blur5 = () => setTimeout(blur1, 100);
+const blur6 = () => setTimeout(blur1, 1000);
+
+// 当把 li 上的 @click 换成 @mousedown 则哪怕是 blur1 都是正常调用的
+</script>
+
+<template>
+  <div>
+    <input
+      type="number"
+      v-model="num"
+      @focus="search($event.target.value)"
+      @input="search($event.target.value)"
+      @blur="blur1"
+    />
+  </div>
+  <ul v-if="list && list.length">
+    <li v-for="it in list" @click="select_item(it)">{{ it }}</li>
+  </ul>
+  <div v-if="list && !list.length">NO DATA</div>
+</template>
+```
+
+# useApi
+```ts
+export const useApi = <F extends (...args: any[]) => PromiseLike<any>>(fn: F) => {
+  let _args: Parameters<F> = null!;
+  const state = shallowRef({
+    loading: false,
+    error: null,
+    args: null as Parameters<F> | null,
+    res: undefined as Awaited<ReturnType<F>>,
+  });
+  return {
+    get value() {
+      return state.value;
+    },
+    set value(v: typeof state.value) {
+      state.value = v;
+    },
+    fn: ((...args: any) => {
+      _args = args;
+      state.value = { ...state.value, loading: true, error: null };
+      return fn(...args).then(
+        res => {
+          if (_args !== args) return new Promise(_ => _);
+          state.value = { ...state.value, loading: false, args, res };
+          return res;
+        },
+        error => {
+          if (_args !== args) return new Promise(_ => _);
+          state.value = { ...state.value, loading: false, args, error };
+          throw error;
+        }
+      );
+    }) as F,
+  };
+};
+```
+
+# vue 写 css 主题
+vue scoped css 写主题无需管 :global 之类的东西，因为 scoped 添加的属性只在后代选择器的最后一个选择器上添加，所以前面的部分其实是全局的
+
+# makeResource
+```ts
+/**
+ * 创建一个资源，所有组件共用同一个资源，当资源不被任何组件使用时销毁资源
+ * reset 是用于当资源损坏的时候（例如 websocket 连接断开，factory 里已经决定不再自动重连了，那么可以把 t 设置为空，从而在下一次别的组件 consume 的时候能重建 t）
+ */
+const make_resource = <T>(factory: (reset: () => void) => T, destroy: (t: T) => void) => {
+  let t: T = null!;
+  let count = 0;
+  const consume = () => {
+    t ??= factory(() => t = null!);
+    count++;
+    return t;
+  };
+  const release = () => {
+    count--;
+    if (!count) {
+      destroy(t);
+      t = null!;
+    }
+  };
+  return { consume, release };
+};
+
+export const { consume: connect_ws, release: close_ws } = make_resource(
+  reset => {
+    // 这个比较特殊，因为需要自动重连，所以需要内部可变性，一般不需要内部可变性的资源可以直接返回资源
+    const ref: { ws: WebSocket } = { ws: null! };
+    connect();
+    let connect_times = 0;
+    return ref;
+    function connect() {
+      connect_times++;
+      if (connect_times > 5) {
+        reset();
+        return();
+      }
+      ref.ws = new WebSocket('');
+      // 无限重连
+      ref.ws.onclose = connect;
+      ref.ws.onmessage = msg => {};
+    }
+  },
+  t => t.ws.close()
+);
+```
+
+# useSafeActivatedDeactivated
+```ts
+export const useSafeActivatedDeactivated = (on_activated: () => any, on_deactivated: () => any) => {
+  // ? 某些情况下会出现打开并显示组件时，触发了 onMounted，却没有触发 onActivated。原因似乎是因为 keep-alive.include 在打开组件时没有该组件
+  let is_activating = false;
+  const _on_activated = () => {
+    if (is_activating) return;
+    on_activated();
+  };
+  const _on_deactivated = () => {
+    if (!is_activating) return;
+    on_deactivated();
+  };
+  onMounted(_on_activated);
+  onBeforeUnmount(_on_deactivated);
+  onActivated(_on_activated);
+  onDeactivated(_on_deactivated);
+};
+
+export const useSafeActivatedDeactivatedTimeout = (on_activated: () => any, on_deactivated: () => any, ms: number) => {
+  let timeout = 0;
+  useSafeActivatedDeactivated(
+    () => {
+      if (!timeout) {
+        on_activated();
+      } else {
+        clearTimeout(timeout);
+        timeout = 0;
+      }
+    },
+    () => {
+      timeout = setTimeout(() => {
+        timeout = 0;
+        on_deactivated();
+      }, ms) as any;
+    }
+  );
+};
+```
+
+
+# wait 
+```ts
+type Awaitable<T> = T | Promise<T>;
+
+export const wait = async (fn: () => Awaitable<boolean>, ms: number, { step = 0, signal = null as any as AbortSignal }) => {
+  const now = Date.now();
+  while (true) {
+    const res = await fn();
+    if (res === true) return true;
+    if (signal?.aborted) return false;
+    if (Date.now() - now > ms) throw '超时';
+    await new Promise(res => setTimeout(res, step));
+  }
+};
+
+export const wait_strict = async (fn: () => Promise<boolean>, ms: number, { step = 0, signal = null as any as AbortSignal }) => {
+  const timeout = {};
+  let race_res = null;
+  race_res = await Promise.race([
+    new Promise(res => setTimeout(() => res(timeout), ms)),
+    (async () => {
+      while (true) {
+        const res = await fn();
+        if (res === true) return true;
+        if (signal?.aborted) return false;
+        if (race_res) return;
+        await new Promise(res => setTimeout(res, step));
+      }
+    })(),
+  ]);
+  if (race_res === timeout) throw '超时';
+  return race_res as boolean;
+};
+
+```
+
+# 电脑文件管理
+对于下载的大文件（各种压缩包，程序安装文件，音视频等媒体文件），只需要区分是 public 还是 private 就行，除了 public/private 以外，各自都混沌地放在一个目录里，用 标签系统去管理（标签可以给文件打标签，也可以给文件夹打标签（因为有些下载文件是种子，有目录，里面有少量小文件））
+对于用户产生的文件（例如程序安装目录，工作项目目录，压缩包解压目录-也是程序安装目录），就相对有目的性，而且小文件太多，
+然后简便访问，可以用 subst M: D:\Download\ 命令 来把目录给映射为分区。 subst 的命令里删除虚拟映射是 subst /D M:
+
+TotalCommander 有给文件加注释的功能，而且还不影响文件的 hash
+
+感觉最合适的就是 下载统一放在一个目录。然后 有 下载的分类目录，里面放 下载的东西的 symbol link （放 symbol link 而不是 hardlink , 也不是 目录连接点junction link，目录连接过时 https://ourtechroom.com/tech/junction-vs-symbolic-links/#:~:text=Junction%20Links%20works%20only%20for,both%20absolute%20and%20relative%20path. ） 
+hardlink 则因为只能用于文件，如果是复制目录，但文件是 hardlink，则在目录里创建新文件不会被同步（虽然一般来说不会动修改的东西，不会往 下载的种子文件夹内放其他东西，但也可能有例外，例如想给下载文件里放上之前的下载网页地址，就 nushell `echo {url:'xxxx'} | save a.mp4.json` 和 `open a.mp4.json | upsert url xxxx | save a.mp4.json`）。。。虽然 pnpm 是目录用符号链接，文件用硬链接，但目前没有这样的工具，干脆整个就符号链接算了
+也就是说有目录
+D:
+  downloads
+    a.mp4
+    b.mkv
+    cccc
+      c.exe
+      c.txt
+  tags
+    programming
+      a.mp4.symbolic
+      cccc.symbolic
+    vtuber
+      b.mkv.symbolic
+  user
+    .config/c/.c.conf
+  apps
+    // apps 里可以分 tag，例如 game, util 这种，也可以不分，因为 apps 其实是一个生命周期挺短的文件夹，换电脑，卸载软件，它都没了
+    cccc
+      cccc.symbolic - 可以有，可以没有，看自己的使用方便程度
+      launch_c.exe
+
+# p2p 审查对抗
+i2p 很好，但是有缺点就是谁都能知道你使用了 i2p，也就是政府可以调试 i2p 软件，连接进 i2p 网络，看到都有哪些 ip 连接了 i2p 网络，政府可以根据 ip 抓人，就算不抓人，给你停网两天也够你受的。而事实上所有的 p2p 都必然是这样，知道都有谁使用了该 p2p 网络。
+所以需要有 half point to point (hp2p) ，在用户可以自己选择是否服务其他节点（替别人转发流量，帮别人查询文件 等等），用户可以自己选择初始连接哪些节点，可以黑名单节点，可以只连接哪些节点，黑名单其他全部节点。服务于他人的节点是 英雄节点，其有现实的力量可以抵抗政府抓人或断网。政府也可以假扮英雄节点，来找到谁连接了 p2p 网络，这种是 间谍节点。只要自己不做英雄节点，也不连接间谍节点，就不会被发现自己有使用该 p2p 网络。除非说政府看谁的流量有流向英雄节点，但那也只能说明你跟英雄节点正常交流，并不能说明你有使用 p2p 网络，甚至你完全有可能只是在使用英雄节点所在机器提供的其他服务，完全不知道他有在运行 p2p 网络。
+英雄节点可以手动维护，也可以英雄节点自己自发的判断。普通人连接一个自己相信的英雄节点，然后那个英雄节点把其他的他认为也不错的英雄节点告诉普通人。然后有用户也想要提供服务，那它一开始只能给英雄节点提供服务，等到服务得多了，英雄节点判断它是一个好节点时，才愿意在“告诉普通人其他英雄节点”这一步把它也带上。
+
+网络层级 + 网络中继 也很有趣，能有效抵抗审查。例如 用 qq 发文件就是一种网络，英雄节点收到了普通节点的流量，可以通过 qq 转发给其他英雄节点。这就是 基于ip网络的i2p 与 基于qq网络的i2p 中继了

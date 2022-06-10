@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebRTC</title>
+</head>
+<body>
+  <script>
+
+    (async () => {
+      const user_id = Math.random().toString(36).slice(2);
+      const room_id = location.search.replace('?room_id=', '');
+
+      const configuration = {'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}]}
+      const peerConnection = new RTCPeerConnection(configuration);
+
+      const signal = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(signal);
+
+      const room = await new Promise(async (resolve) => {
+        let room = {};
+        while (Object.keys(room).length < 2) {
+          const res = await fetch('/chat?json=' + encodeURIComponent(JSON.stringify({ user_id, room_id, signal })));
+          room = await res.json();
+        }
+        resolve(room);
+      });
+
+      Object.keys(room).forEach(uid => {
+        const div = document.createElement('div');
+        div.innerHTML = `<span>${uid}: </span><video id="v_${uid}" autoplay playsinline controls="false" />`
+        document.body.appendChild(div);
+      });
+      
+      const constraints = {'video': true, 'audio': true};
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      document.querySelector('video#v_' + user_id).srcObject = stream;
+
+      const others = Object.keys(room).filter(v => v !== user_id);
+      others.forEach(async uid => {
+        
+      });
+      // .forEach(async uid => {
+      //   const sig = room[uid];
+      //   peerConnection.setRemoteDescription(sig)
+      // });
+
+      console.log(room);
+      alert(JSON.stringify(room));
+    })();
+    
+  </script>
+</body>
+</html>
