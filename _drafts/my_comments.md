@@ -72,3 +72,6 @@ https://www.zhihu.com/zvideo/1385648563959947264
 “没心没肺的傻姑娘，每段恋爱都掏心掏肺”
 
 
+# https://news.ycombinator.com/reply?id=31886065&goto=item%3Fid%3D31885137%2331886065
+Marx has said: "Creative labor has become the primary need of life". I don't know if it's the original words, I translated it from Chinese. You think spending 7 years to build your own house is better than to play video games. But what if to create a video game? Creating a video game is too hard? How about to just write game reviews and walkthroughs in detail and combine them into a book.
+It's not that you think building a house is more meaningful than playing video games. It's that you want to create, but your job didn't give you a chance to create or what you create doesn't belong to you.
