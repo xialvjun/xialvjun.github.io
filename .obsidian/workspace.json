@@ -1,0 +1,114 @@
+{
+  "main": {
+    "id": "dc65f304ab76d63e",
+    "type": "split",
+    "children": [
+      {
+        "id": "8639479ec366f982",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "b4aa5e0495811fe6",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "_drafts/note.md",
+                "mode": "source",
+                "source": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "03fcb6574694dbd1",
+    "type": "split",
+    "children": [
+      {
+        "id": "086e1a91b953418c",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "57b2a218558503d4",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "ecbc26550b3ba980",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "04b3da611df87e1a",
+    "type": "split",
+    "children": [
+      {
+        "id": "946ae2bff30b2536",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "01e64cede9e93ae8",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "_drafts/note.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "ribbon": {
+    "mostRecentAction": ""
+  },
+  "active": "b4aa5e0495811fe6",
+  "lastOpenFiles": [
+    "_drafts/note.md",
+    "_drafts/form_input_react.md",
+    "_drafts/flutter.md",
+    "_drafts/btsync.md",
+    "_drafts/bitcoin.md",
+    "_drafts/面试问题.md",
+    "_drafts/2021-08-16-micro-frontend-is-bad.md",
+    "_drafts/2021-01-15-type-dependency-and-decoupling.md",
+    "_drafts/2018-07-16-fuck-you-eq.md",
+    "_drafts/2021-07-15-chart-y-min-max.md"
+  ]
+}
