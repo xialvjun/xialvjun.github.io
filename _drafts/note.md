@@ -3147,3 +3147,438 @@ const three_add_one_num = one_add_3_nums(1,1);
 > 不对，并不应该是对“面”做均分（面做的平分对应的角度并非对球的平分），更不应该是每面是一个数的平方（有的正多面体，它的面并非正方形，哪来有平方）。。。应该直接就是对球做平分，则对应到正多面体，就是一面就是一帧。那么要怎么决定谁是关键帧呢？应该有派生正多面体（例如正四面体，有四个顶点，把四个顶点按一半的棱长切掉，它就成为一个正八面体，即正八面体是正四面体的派生正多面体），则如果非常讲究的话，可以是。。。
 > 完全错误。因为说到底还是要靠数学工具做压缩，所以模型不应该设计得太复杂。应该直接记录 3D 信息，即每一时间帧都是一个 3D 模型，在时间上定义关键帧和普通帧，然后做压缩。无非是以前的 2D 压缩算法不能用了。
 
+
+# Vue Setup 组件
+
+```ts
+// Setup.ts
+import { defineComponent, PropType } from 'vue';
+
+// 同层级多个此组件时，记得带 key. 
+// 例如: <Setup v-if="flag" :setup="">xxx</Setup><Setup v-else :setup="">xxx</Setup>
+// 上面的例子在 flag 切换时, Setup 不会切换, 需要带 key:
+// <Setup key="flag_true" v-if="flag" :setup="xxx">xxx</Setup><Setup key="flag_false" v-else :setup="yyy">yyy</Setup>
+export default defineComponent({
+  props: {
+    setup: {
+      type: Function as PropType<(props: any, ctx: any) => any>,
+      required: true,
+    },
+  },
+  setup(props, ctx) {
+    const all = props.setup(props, ctx);
+    // 直接用 js 写比用 .vue 文件写，可以少写一个 component: <component :is="is"><slot v-bind="all"/></component>, 从而让外部更灵活的控制组件根元素
+    // 除非说 .vue 文件里 template 里可以直接使用 this: <slot v-bind="this" />, 从而让外部的 slot 自动解了 ref.value, ~~可惜不行~~(好吧，确实可以)
+    // 而这种 js 写法不会自动解 ref.value, 在外部需要 xyz.value 来使用。另外 js 写法 setup 不一定非要返回 Object, 它返回是什么就是什么
+    return () => {
+      return ctx.slots.default?.(all);
+    };
+  },
+});
+```
+
+```vue
+<script lang="ts">
+import { defineComponent, PropType } from 'vue';
+export default defineComponent({
+  props: {
+    component_is: {
+      type: String,
+      default: 'div',
+    },
+    setup: {
+      type: Function as PropType<(props: any, ctx: any) => Object>,
+      required: true,
+    },
+  },
+  setup(props, ctx) {
+    return props.setup(props, ctx);
+    // const all = props.setup(props, ctx);
+    // return { all };
+  },
+});
+</script>
+
+<template>
+  <component :is="component_is">
+    <slot v-bind="this"></slot>
+    <!-- <slot v-bind="all"></slot> -->
+  </component>
+</template>
+```
+
+
+# form validate
+许多表单组件库，例如 element-ui 的 form 都有 validate 方法，validate 错误时会滚动表单至错误处。但有些时候校验是后端做的，此时单独为校验做个接口并不划算，就直接提交，出错就报错就是了，此处一般是 alert/toast 弹窗。但其实可以有体验优化，就是 接口返回错误 message 的时候，可以顺带告诉前端是哪个字段错误，前端就给那个字段一个必错的 validator，然后做一次 validate。于是后端的错误信息就放到 输入框的下面 了，而且表单还会滚动到那里，总体体验就像是前端校验一样。
+
+
+# js export 函数库
+优先用  `export function abc() {}` 而不是 `export const abc = () => {}` 因为 function 有函数提升，可以不用在意代码的顺序，哪怕有循环引用也没有关系，无非是递归而已。函数本身就是支持递归的。无非是 递归运行可能在模块初始化时就开始了。
+当然，也有不好的地方，就是 模块里 可能不仅仅 export 函数，还会 export 其他对象，此时只能用 export const ，那样就跟 函数不一致了。
+算了，还是统一 `export const abc = () => {}` 吧
+
+# LiveVideo.vue
+记录此组件的原因是因为 - 此组件对 LiveVideo 的接口抽象挺不错，需要三个函数，组件负责处理生命周期
+```vue
+<script lang="ts">
+import { defineComponent, getCurrentInstance, ref, shallowRef, watch, PropType, onMounted, onBeforeUnmount } from 'vue';
+// import 'flv.js';
+import DPlayer, { DPlayerOptions } from 'dplayer';
+import { useApi, useInterval } from '../refs';
+
+export default defineComponent({
+  props: {
+    start_then_url: {
+      type: Function as PropType<() => Promise<string>>,
+      required: true,
+    },
+    heartbeat: Object as PropType<{ fn: () => any; ms: number }>,
+    stop: {
+      type: Function as PropType<() => Promise<any>>,
+      required: true,
+    },
+    dplayer_opts: Object as PropType<Partial<DPlayerOptions>>,
+  },
+  setup(props) {
+    const ins = getCurrentInstance()!;
+    const insp = ins.proxy;
+
+    const { start_then_url, stop, heartbeat, dplayer_opts } = props;
+    const api_start = useApi(start_then_url);
+    const api_stop = useApi(stop);
+    // const api_heart_interval = heartbeat && useInterval(async () => heartbeat.fn(), heartbeat.ms);
+    const api_heart_interval = useInterval();
+
+    const start_error = shallowRef();
+    // 保留 start_promise 让外部判断 start 过程结束，是否报错，来把错误汇总显示
+    const start_promise = shallowRef();
+
+    let player: DPlayer | null = null;
+    let wrapper: HTMLDivElement = null!;
+    const cleanup = async () => {
+      if (player) {
+        player.destroy();
+        player = null;
+        wrapper.innerHTML = '';
+        api_heart_interval?.clear();
+        await api_stop.fn();
+      }
+    };
+    const refresh = async () => {
+      try {
+        await cleanup();
+        start_error.value = null;
+        const url = await api_start.fn();
+        const container = document.createElement('div');
+        wrapper.innerHTML = '';
+        wrapper.appendChild(container);
+        await new Promise(requestAnimationFrame);
+        await new Promise(requestAnimationFrame);
+        player = new DPlayer({
+          live: true,
+          autoplay: true,
+          mutex: false,
+          video: { type: 'flv', url },
+          ...dplayer_opts,
+          container,
+        });
+        heartbeat && api_heart_interval.set(heartbeat.fn, heartbeat.ms);
+      } catch (error) {
+        start_error.value = error;
+      }
+    };
+
+    onBeforeUnmount(cleanup);
+    onMounted(() => {
+      wrapper = insp.$refs.wrapper as HTMLDivElement;
+      start_promise.value = refresh();
+    });
+    return { start_error, refresh, start_promise };
+  },
+});
+</script>
+
+<template>
+  <div class="live_video">
+    <div class="wrapper" ref="wrapper"></div>
+    <slot :start_error="start_error" :refresh="refresh">
+      <div v-if="!!start_error" class="error">
+        <div>抱歉，视频加载失败!</div>
+        <div class="refresh_btn" @click="refresh">点击刷新</div>
+      </div>
+    </slot>
+  </div>
+</template>
+
+<style lang="less">
+.live_video {
+  // background: no-repeat center / cover url('../../assets/images/monitorManage/play-back.png');
+  position: relative;
+  .wrapper,
+  .error {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+  .wrapper .dplayer {
+    width: 100%;
+    height: 100%;
+  }
+  .error {
+    width: 100%;
+    // background: #0d1438;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    .refresh_btn {
+      cursor: pointer;
+      filter: brightness(110%);
+      &:hover {
+        filter: brightness(120%);
+      }
+    }
+  }
+}
+</style>
+```
+
+# useLazyCascader - element-ui.el-cascader
+```ts
+
+export function useLazyCascader(props: { value: string; label: string; lazyLoad: (node: any, resolve: any) => any }, value: WatchSource) {
+  // 让 cascader 等待加载完，然后调用 computePresentText() 从而正常回显数据
+  let _promise: any = Promise.resolve();
+  const _props = {
+    lazy: true,
+    ...props,
+    lazyLoad: async (node: any, resolve: any) => {
+      _promise = new Promise(res => props.lazyLoad(node, res));
+      const res = await _promise;
+      resolve(res);
+    },
+  };
+  // el-cascader 在 value 改变时不会主动响应，只是在初始化时会调用 lazyLoad，但是 load 结束后，也不会更新显示的值，只是下拉框里高亮被更新了
+  // 需要等待 lazyLoad 结束后，主动调用 comonent_instance.computePresentText(), 但 computePresentText 内有判断逻辑不好动
+  // 临时设置 checkStrictly=true 后会立马变回 false，设置 node.isLeaf 会 getter 报错，所以直接设置 presentText=node.getText() 就是
+  const setup = () => {
+    const insp = getCurrentInstance()!.proxy;
+    const _ref = ref();
+    // ! 没用，在 value 变化，路径完全变化后，cascader 并不会去请求之前没下载的路径，所以还是每次在外部引起的 value 变化时，重建 cascader 算了
+    const _key = ref(0);
+    onMounted(async () => {
+      watch(
+        value,
+        cv => {
+          let retried = false;
+          computePresentContent();
+          async function computePresentContent() {
+            const r = _ref.value;
+            if (!r) return;
+            let p = null as any;
+            while (p !== _promise) {
+              p = _promise;
+              await p;
+              await insp.$nextTick();
+            }
+            const node = r.panel.getNodeByValue(cv);
+            // ! 之前那样会有 bug，会在遇到哪怕加载全部也不存在的 value 时就死循环加载。所以加个 retried 来打断循环
+            // 因为 retried 是外部状态，所以把 watch_fn 抽出
+            if (!node && !retried) {
+              if (cv && cv.length) {
+                _key.value++;
+                await insp.$nextTick();
+                retried = true;
+                computePresentContent();
+              }
+              return;
+            }
+            r.computePresentContent();
+            await insp.$nextTick();
+            r.presentText = node.getText(r.showAllLevels, r.separator);
+          }
+        },
+        { flush: 'post', immediate: true }
+      );
+    });
+    return { ref: _ref, key: _key };
+  };
+  return { props: _props, setup };
+}
+```
+
+使用时
+```
+const cascader = useLazyCascader(xxx);
+<Setup :setup="cascader.setup" v-slot="{ref,key}">
+  <el-cascader :key="key.value" :ref="ref" v-model="value" :props="cascader.props" />
+</Setup>
+```
+
+把这个记录下来的原因只是这个的 设计思路 和 中间细节 都还不错，例如 抽出 computePresentContent ，把 retried 放外面
+
+
+# 计算百分比
+```js
+const tidy_data = computed(() => {
+  const arv = api_result.value;
+  if (!arv) {
+    return [];
+  }
+  const sum = arv.reduce((acc, cv) => acc + cv.vehicleNum, 0);
+  const len = arv.length;
+  let rest = 100;
+  return arv.map((it, idx) => {
+    const is_last = idx === len - 1;
+    const value = it.vehicleNum;
+    const percent = !sum ? 0 : !value ? 0 : is_last ? rest : value / sum;
+    return { ...it, name: it.vehicleTypeName, value: it.vehicleNum, percent }
+  })
+});
+
+// OR
+
+// export const compute_percent = (a: number, b: number, digits = 1) => (!b ? 0 : !a ? 0 : parseFloat(((a / b) * 100).toFixed(digits)));
+// export const get_percent = (a: number, b: number, digits = 1) => (!b ? '0' : !a ? '0' : ((a / b) * 100).toFixed(digits));
+// get_percent 和 list_percent 都故意返回字符串，尽量让调用者不要拿结果再次做数学运算
+export const list_percent = (list: number[], digits = 1) => {
+  const sum = list.reduce((acc, cv) => acc + cv, 0);
+  if (!sum) {
+    return list.map(_ => '0');
+  }
+  const last_not_0_idx = list.length - 1 - list.slice().findIndex(v => v);
+  const dum = 10 ** digits;
+  let rest = 100 * dum;
+  return list.map((n, idx) => {
+    if (idx === last_not_0_idx) {
+      return rest / dum + '';
+    }
+    const int = Math.round((n / sum) * 100 * dum);
+    rest -= int;
+    return int / dum + '';
+  });
+};
+
+const tidy_data = computed(() => {
+      if (!api_result.value) {
+        return [];
+      }
+      // const sum = api_result.value.reduce((acc, cv) => acc + cv.vehicleNum, 0);
+      // return api_result.value.map((it, idx) => {
+      //   return { ...it, name: it.vehicleTypeName, value: it.vehicleNum, percent: get_percent(it.vehicleNum, sum, 2), color: COLORS[idx] };
+      // });
+      const vehicle_nums = api_result.value.map(it => it.vehicleNum);
+      const percents = list_percent(vehicle_nums, 2);
+      return api_result.value.map((it, idx) => {
+        return { ...it, name: it.vehicleTypeName, value: it.vehicleNum, percent: percents[idx], color: COLORS[idx] };
+      });
+    });
+```
+
+
+# rem 布局
+rem 布局经常会遇到**实际屏幕比设计稿小**的情况，然后设计稿里又有元素有使用 12px，导致实际显示时，无法把那个元素的文字缩小到比 12px 还要小的情况，但元素的 container 又是使用 rem 设置的宽高，进而导致**文字超出容器的显示范围**。就算设计稿没有元素使用 12px，而是最小字体为 14px，但屏幕缩小到一定程度，元素的字体大小仍然会达到 12px 的底线。
+所以**rem布局应该只能解决 实际屏幕比设计稿大，从而可以无缝放大，但不能解决 屏幕比设计稿小 的问题**，最简单的实现是: 
+`html.font-ize = max(100px, 100vw * 100px / 1920px)` (1920px 是设计稿宽度)
+至于要解决 屏幕比设计稿小 的问题，需要的是 流式布局/flex
+https://news.ycombinator.com/item?id=33707392
+https://www.joshwcomeau.com/css/interactive-guide-to-flexbox/
+
+如果可以的话，能设计稿为 1280*600 吗？ 我知道你们 UI 一般都是出 1080p 的，但事实上这种逻辑其实是错的。1080p 的设计稿在小屏幕上是没法等比缩放的，非要缩放，也会有字体不清晰的问题。1080p 的设计稿在小屏幕上，只能用 流式布局，而流式布局 其实很多 产品/客户 也都不咋喜欢。而小设计稿 到 大屏幕上就很容易做等比缩放了
+
+或许 1280*600 实在太小了，在 显示表格 之类的时候显示不了几行几列，在小屏幕上 显示不了几行几列 可以接受，但是在大屏幕上就。此时就是特意地不想要 等比缩放。
+
+所以 1600*(900-100) 挺合适。此时就是，实际屏幕比这大时可以等比缩放，比这小时，完全无缩放，流式布局
+
+https://www.zhihu.com/question/41014727/answer/2804040764
+
+# 样式
+一个系统的样式应该分为 工具样式 与 结构样式，所以可以分为两个 less 文件。这两个都是全局样式，应以 特定字符 gb(global) 开头
+工具样式 - 或许不该叫工具样式，而该叫组件样式
+结构样式 - 指的并不是分页面样式，而是按照整个系统的结构
+```utils.less
+.gb_form_inline {}
+.gb_divider {}
+// etc
+```
+
+```structure.less
+.gb_login {}
+.gb_home {
+  .gb_layout {
+
+  }
+}
+```
+然后页面组件内应该只有尽可能少的组件内样式，用 vue scoped 限制
+
+
+# 业务系统中，超多字段的增删改查
+这些字段经常需要一些其他基础数据才能正常展示，例如 select 里需要 option 列表，于是经常会在 setup 函数里去获取这些数据。另外，这些字段也可能发生变化，今天加了这个字段，明天又移除了这个字段，然后程序员又忘记对应移除 setup 里获取的数据，于是它成为死代码。其实可以直接使用 Setup 组件去获取那些技术数据，这样在移除界面元素时，会同步移除 Setup 组件。
+```
+<el-form>
+  <el-form-item label="项目名称" prop="projectId">
+    <Setup :setup="() => ({projects: useMineProjects()})" v-slot="{projects}">
+      <el-select v-model="form.projectId">
+        <el-option v-for="it in projects" :label="it.name" :value="it.id" />
+      </el-select>
+    </Setup>
+  </el-form-item>
+</el-form>
+```
+至于为什么不直接封装一个 MineProjectSelect 组件，因为那样不够灵活。
+另外，好吧，这个在 vue 上仍有问题，它需要把 useMineProjects 放到上层组件的 setup 里
+
+
+# IOT 设备的控制
+zigbee、蓝牙、wifi，甚至可能还有不少别的设备。要控制那些设备，首先需要手机（控制设备）支持 当前的通讯协议（zigbee/蓝牙/wifi）。
+然后还需要 手机 知道怎么控制此设备，而这往往是要手机安装特定的软件。这很麻烦，也不标准。
+那有没有一种足够灵活的标准。例如，这些设备内部都有个 http 服务，虽然设备本身不使用 ip/tcp 协议，但是可以让 http 运行在 zigbee 协议上，而手机只用安装统一的软件，调用手机硬件 zigbee 跟设备交互，得到 设备提供的网页，在网页上做控制。
+
+不过还有设备反控制手机，例如蓝牙耳机控制音量大小。这种是 蓝牙 设备连接上后，说明自己支持什么协议。这种可能就没那么灵活了，但是能代码控制，也能反向控制。
+其实要说，的确是这种最好。手机硬件 支持蓝牙，但它本身不识别蓝牙的任何应用协议。操作系统也不管这东西。这样就可以有一个 软件 去调用手机的 蓝牙 通讯协议，与设备做交互，那软件可以随时增加新模块，支持新协议。
+
+
+# Koka + gqless
+https://gqless.com/
+
+```js
+const ComponentUsername = () => {
+  return <div>{query().user().name()}</div>
+}
+
+const q = query_builder(ComponentUsername); // This is pure. It's kind of FBIP. The query_builder create a state, and query().user().name() mutate it
+q.do_query(); // this has IO effect
+
+fun query_builder(com_fn) {
+  const state = {};
+  with query: () => state;
+  com_fn();
+  return state;
+}
+
+const vdom = react(ComponentUsername); // This is pure. The query().user().name() is just to read data from cache
+
+fun react(com_fn, cache) {
+  with query: () => cache;
+  return com_fn();
+}
+```
+
+
+# CAS-content addressable storage 内容寻址存储
+ipfs/dat/beaker/lbry 等等。它们要么太复杂，要么有相当大的局限性。
+- p2p 网络层面避免吸血（人们向大佬节点要资源，大佬节点说很短时间之前把资源给了a，你们同时也可以找a要，人们告诉大佬说找a要不到，大佬于是伪装一下，找a要资源，去验证，验证发现a是吸血节点，于是大佬就告诉大家，就是俗称的说坏话。其实伪装比较难，因为 ip 很难伪装，所以，这中间任意一步都广播，人们自己决定节点的可信度。至于 ip 与节点的关系，是认为只要 ip 相同，那哪怕节点 id 不同，只要有一个坏人，就都当作坏人，还是说忽视 ip，只认节点 id，那由各客户端自己决定）
+- p2p 避免吸血 。 其实是 gossip 协议，然后各客户端记录下大家说的话，客户端自己判断其他客户端的可信度。还有客户端之间互相帮忙（例如有新人a刚入网，找我b要资源x，我根本不认识a，我认识的人中也没有聊起过a，那我给a只分配很少的流量，甚至不分配流量。但是同时也有人c找我要资源y，我正给c传着，我想a可以帮我，所以我要求a帮我，只要它帮我，我就给它分配更高的带宽，我把y的后面的部分提前传给a，然后告诉c让他也从a那里拿，然后c说他的确从a那拿到了，那我就给a分配更多的带宽）。其实就是 - 事件关联的话，就发准确消息。事件无关的人，就 gossip 说坏话。
+- 不能像 ipfs 那样把文件都拆散，需要是完整的文件，从而不影响用户自己本地使用。分享单位是文件，而非文件片段（事实上，两个相类似的文件，文件片段也类似的可能性很小，视频在做少量剪辑后，虽然看起来内容差不多，但是基本都是重新编码了，就算没重新编码，偏移量应该也变了，片段 hash 基本没有重复的）
+- 用户只需要决定共享文件夹（最好支持多文件夹）即可。当然，别的上传速度等配置也要有
+- 可以用这个做程序分发，甚至都不用担心隐私文件被分享，因为人们不知道你隐私文件的 hash
+- 树形结构 `repo_dirs:{repo1:{programs:{pro1:{pro1.exe,config.json}}}}` ... 基于这个树形结构，要做程序分发可以简单的命令 `cas hash1 -r repo1 -p programs/pro2` 这里 -p 不是系统文件路径，而是相对于 repo 的路径。当然，要更新就需要更复杂的逻辑，参考 scoop
+- 甚至做自己个人目录的同步也可以。我在公司电脑工作，下班了，公司电脑不关，获取自己个人目录 hash，回到家里电脑，添加公司电脑节点，然后 下载个人目录 hash，很快就能拿到个人目录，虽然此时只有 文件元信息（文件名、大小、时间等，大概没有时间），你用哪个文件，就后续下载哪个文件。另外，因为之后还想回到公司后，把家里的同步过来，但家里的并没有完全填充文件内容，所以 目录的hash应该只是个merkel-tree，是对文件的hash，文件名、大小这些meta信息的再hash。
+- 事实上，目录，就是一个文件。文件本身是没有文件名的，也没有大小信息，文件只在目录里才有文件名和大小。初始目录就是 repo1，不提供 -p 参数的话，就默认 hash 作为文件名。这个文件是目录，还是文件，等文件下下来自然就知道。至于这个文件是mp3还是mp4，那就得用户自己尝试了。但如果这个文件在目录里，那目录自然存储了它的文件名，那就知道它是mp4了
+- hash 算法采用 sha256 . hash算法分为安全hash和非安全hash。安全hash(md5/sha1/256/512)很难伪造具有相同hash的其他文件。非安全hash（crc32/64）往往只是为了校验文件完整性，避免下载错误. 而 md5 已经被破解，sha1 也即将被破解，所以用 sha256. 尤其要用这个做程序分发，而且是 p2p，如果不用安全 hash, 那只要有人构造个病毒，放在自己的 repo 里，就自动传播出去了。当然，也有文件大小来做校验。要 hash 和大小都相同才认为是正确的文件，但只有目录里的文件才有文件大小。如果你是分发单个文件的安装包，那安装包被替换了也不知道。如果你是分发整个目录，那也可以替换整个目录。所以，一定要安全 hash。用 sha256
+
+> IPNS 要等 IPFS/CAS 成熟，都用起来之后再说
+> 之后还有时间签名功能，更是另说
