@@ -3625,3 +3625,178 @@ ipfs/dat/beaker/lbry 等等。它们要么太复杂，要么有相当大的局�
 当然，具体某某端，并不一定就真的分某某端，而是账户在进应用的时候，就有了具体的角色，显示的内容也是那个角色可以看到的内容，而**不存在某一个账户，某一个角色可以看到程序的所有的功能**，如果你作为测试，想要测试程序的所有功能，那你至少需要，程序设计时有多少个程序角色，那你就至少需要这么多个账户。
 
 > 另外有尊重自定义角色的数据安全管理。一般来说这并不重要，基本上只要尊重数据关联性即可，也就是租户。至于更细致的自定义角色的数据安全，前端功能的角色管理本身是管不了接口的安全的，除非说把前端功能与接口给匹配上，匹配数据放进后端代码里。有个可能的方向是，前端在编译时，可以生成这个匹配数据（就跟后端编译时能生成前端要调用的接口类型一样，虽然grpc、trpc、graphql都是前端编译从后端拿类型，本质上就是后端已经生成了类型），不过不太好弄。当然，没有“尊重自定义角色的数据安全管理”也不打紧，不是非常严格的系统，基本都没这个，非常严格的系统，也基本没有自定义角色。
+
+
+# 业务未定的管理系统
+许多公司，业务未定。他们拿到的数据本身就是混乱的，然后在混乱的数据中从 A 找到 B，即是关联查询，哪怕查不到，也有可能查到个差不多的，然后人工决定是否改变数据。
+这里，其实这业务需要的不是一个 管理系统，而是一个 记事本。表没有约束，外键关联也并不存在，关联查询也不只有 相等关系，也要包括 相似关系。所有的关联都是 0到多个，不存在 固定的1个。
+可以把这样的一个没有约束的系统作为 外层系统。**外层系统的界面设计也要符合所有的关联都是 0到多个 这种逻辑，还有 相似关系，各种未知信息。**
+运维需要定期整理数据，把数据转入 有完整约束的内存系统里。或者可以根本没有内层系统。
+外层系统比内层系统更难设计，字段就很难定义，甚至需要定义不少模糊的 json 字段
+
+为什么需要有“运维定期整理数据”，因为程序是不能替人做决定的，程序可以按规则对数据做转换，但规则本身就不确定的时候，程序就没办法了。而人可以做决定，因为人可以“发现”。
+例如规则 把小于5的数变为0，大于等于5的变为10。然后来了一批数据，恰好是 0123456789 这样顺着来的，在人对业务的理解里，这里的数据应该是混乱的，不太可能这样顺序出现。但机器是不会发现这样的异常的，但人能“发现”异常，进而联系人解决。
+
+当然，也可以没有外层系统，只有内层系统，在录入数据时，数据不和规则，就直接报错，不允许错误数据进入，这种也是正确的。
+
+
+# FP vs OO
+[Bob's Blog - FP vs OO](http://blog.cleancoder.com/uncle-bob/2018/04/13/FPvsOO.html)
+Bob misunderstood the essence difference of FP vs OO.
+FP favors united state management, not split state to too many parts, no state change directly in your business code.
+OO favors the other hand.
+更广阔的 FP 概念里，不只是 倾向于统一的状态，它把状态的概念的扩展到副作用，外部副作用就是状态本身，内部副作用就是内部状态。
+
+
+# 纯粹的资本主义
+假设有这样一种政体。那个国家在某一刻失去了印钱的权利，大家之后都用之前有的钱进行交易。其实就跟大家都用 btc 一样。政府只负责国防和治安，其他的基建啥的一律都不是它的责任，它也不能收任何形式的税收。任何全民资产（土地、水等等）都是全民共有，任何全民资产的交易都是全民投票决定价格（假设那时的科技已经发达到辅助全民投票是一件非常方便的事情了）。举例我要买块地盖房，那我投票那块地0元，别人投票100元，大家平均，得到99元，于是我就99元买下了那块地，则这块地就永久属于我的了（除非我死了，且没有遗嘱）。全民也投票花多少钱在国防和治安上。这就是一种完全的资本主义逻辑的国家。把这种国家定义为 0 分。
+然后有的国家收了税，开始做了一些事，有好事，有坏事。如果是好事，好事的结果大于税，则 正数分值，如果是坏事，则 负分=税+坏事。
+另外，有的国家有人口歧视（户口政策），这是绝对不对的，无论什么理由。
+
+评论 https://www.zhihu.com/question/476698294/answer/2912627717
+同理，要搞好初次分配，直接发钱，全民基本工资比大基建、以工代赈公平。其实国家治理，应该来说是很简单的，把国防、治安和法治做好，偶尔领头一下大工程，也就是基建，其他的就是初次分配，直接全民基本工资就行了。嫌基本工资不够的就去卷，觉得基本工资够了的就去做自己喜欢的事情，实现自己的人生价值。
+
+
+# 编程语言包管理
+npm / yarn / pnpm / pip / cargo 等等
+这里对比下 node 的包管理 和 rust 的包管理，能发现 rust 的包管理 “更正确”。
+首先，分享代码并非完全基于 模块mod 。因为 mod 是单个程序员自己在自己的代码里做 pub 区分的，而 包 则是程序员把 包 作为一个整体，分享给社区，并在包里设置 pub。
+**完全可以一个元素在自己的包里是 pub 的，但分享给社区里，它是 private 的。** node 的包管理就做不到这一点，而 rust 的可以。
+其实就是 java 的 public/protected/private 的区别。
+
+https://github.com/koka-lang/koka/issues/31#issuecomment-1482200826
+
+    **not use path based imports** is very important.
+
+    Node, Deno are running on the wrong way, on the other hand, Carogo/rust do it right. 
+
+    Why do I emphasize this ? Let's see:
+
+    ```js
+    // package: ffmpeg
+    // file: ffmpeg/utils.js
+    export const a = xxx;
+    export const b = xxx;
+
+    // file: ffmpeg/index.js
+    import { a, b } from './utils';
+    export const encode = xxx;
+    export const decode = xxx;
+
+    // As a package, I want to make just `encode, decode` public, but `a, b` private to other users.
+    // But in JS, I can't do it. People may just:
+    import { a, b } from 'ffmpeg/utils';
+    // You must don't want it
+    ```
+
+    What if we change JS to:
+
+    ```js
+    // package user can just import package index file
+    import * as ffmpeg from 'ffmpeg';
+
+    // they can't import other files in that package
+    import * as utils from 'ffmpeg/utils';
+    // this should be syntax error
+
+    // what if I want to make `ffmpeg/utils` public
+    // file: ffmpeg/index.js
+    export * as utils from './utils';
+    export const encode = xxx;
+    export const decode = xxx;
+
+    // the people can
+    import { utils } from 'ffmpeg'
+    ```
+
+    So, JUST MAKE THIS SYNTAX ERROR: `import * as utils from 'ffmpeg/utils';`
+
+    Well, we can't change JS, but we should do Koka the right way.
+
+    Well, it's just like Java's `public protected private`, the last problem is "should it default private or protected". I prefer `protected` in Koka.
+
+    If it's default protected, then
+
+    ```koka
+    // package: ffmpeg
+    // file: ffmpeg/src/utils.kk
+    fun a() xxx
+    fun b() xxx
+    pub fun c() xxx
+
+    // file: ffmpeg/src/lib.kk
+    pub fun encode()
+      utils.a() // just use utils here
+    // if want to make utils public
+    pub utils
+
+    // package: my_app
+    // file: my_app/src/main.kk
+    use ffmpeg
+    // or
+    use ffmpeg.{utils, encode}
+    fun main()
+      utils.c()
+    ```
+
+
+# Web Components 仅适于制作无状态的纯渲染组件，或者简单状态（字符串，布尔，数字，不能是大对象，不能是函数）的组件
+从 https://juejin.cn/post/7090183231898648613 这里可以知道，web components 
+在 html 上的声明式语法的 attribute 必须得序列化
+而 js 里的命令式语法的 property 倒可以不用序列化
+但现代化前端编程核心就在声明式语法上，则必须得用 attribute，也就是传递的状态需要序列化，太麻烦了
+由此可以明白， https://shoelace.style/ 此类 web components 组件库有许多复杂组件都是错误设计
+不过 vue 可以通过 modifier prop 来绑定复杂状态 `<sl-xxx :abc.prop="" />` https://shoelace.style/frameworks/vue?id=binding-complex-data
+另外，可以查看 https://custom-elements-everywhere.com/
+不过总的来说， Web Components 是无用的，从这个答案可以看到 webcomponents 不能对 slot 内容做复杂的逻辑变换，甚至 style 里连 `::slotted(* + *)` 都不支持，这是硬伤
+https://stackoverflow.com/questions/61626493/slotted-css-selector-for-nested-children-in-shadowdom-slot
+当然，从类型上也有说法，组件不能控制 slot 的类型，所以对 slot 是未知的，所以不能控制 slot。
+如果是纯 jsx 倒是支持类型。
+另外，也可以 js 操纵 childNodes, 而不是用 slot。 `this.shadowRoot.append(...this.childNodes)`，这可以不用 css `::slotted()`
+
+
+# 简单管理页面
+部分适应 PIGX
+api_list = useApi(apis.xxx);
+// 不存在 api_list_do , 因为 api_list_do 的逻辑，一边是把当前输入做验证和格式转换
+// 另一边又是把上一次请求的参数做变更后重新请求。两者逻辑矛盾
+// api_list_do
+
+search_form_new = () => ({xxx});
+search_form = ref(search_form_new());
+search_form_search = () => api_list.fn(transform(search_form.value))
+search_form_reset = () => {search_form.value=search_form_new();search_form_search()}
+
+avue_option = computed(() => ({}));
+avue_page_sync = 
+  avue_loading
+  avue_data
+avue_current_change = (current) => { avue_page_sync.current=current; if (api_list.value.args) api_list.fn({...api_list.value.args, current}) };
+avue_size_change = size => xxxx;
+
+search_form_search()
+
+
+
+# 管理与主观能动性
+没有人喜欢屎上雕花。如果你逼他们屎上雕花，那你就别指望他们能有主观能动性。如果你希望他们能发挥主观能动性，那就别给他们一坨屎。
+所以
+- 要分层，每层给下游的东西都是非常精致，非常清晰明白的东西。业务把自己有什么业务，各业务的重要性，哪些业务赚钱，把这些东西都说清楚，把这些给产品。产品兼职 ux，提供一个简单的prd，把各处都是怎么服务于业务，把各处操作逻辑这么设计的原因说清楚，把这些给 ui。ui 提供一个有很好的一致性的页面设计。开发去实现。
+- 要员工自己找团队，或者员工自己单干。不同的团队对于同一个东西有不同的实现。垃圾的实现丢掉。看最终被采用的实现都是谁提的 pr ，他们有高绩效。
+
+这里有问题，会同时运营好多个系统，运维大概没办法都去操作。有部分地方可以是，所有的外部事件，例如设备上报gps定位事件，运维上传台账excel，都放到kafka里，这里的信息字段越多越好。
+或者是一部分项目是当前正在运行的项目，一部分是开发项目。运行项目可以很少，开发项目可以很多。一段时间后，从开发项目上选一个作为运营项目，并做数据迁移。
+
+
+# url 传参
+url传参 是一种声明式语法，参数太长还让 url 难看。它主要功能是可分享。其他目的其实并不适合 url 传参。
+命令式与声明式，选择哪个应该看状态是由外部管理（声明式）还是内部管理（命令式）。url传参 的形式里，状态一般是内部管理，本身就是矛盾的，所以它的应用场景其实非常有限。
+那怎么做页面间传参呢？
+假如子页面可以不是单例的，则父页面必须要有子页面的实例引用。在使用 router 的场景下，基本不存在这种。
+子页面是单例的：
+直接定义一个全局变量，子页面在适当的时机读取它，这是声明式语法
+定义一个全局 defer(makeDefer)，子页面在创建成功后，把自己的引用 defer.resolve(this)，然后父页面 (await defer).xxx(params) 是命令式语法
+
+
+# 一个长久维护的系统，数据结构必须要明确，所有的业务必须在数据结构里就体现出来
+不然，人们就不敢动一些复杂的业务，因为不知道别的什么地方是否就有特例业务。
