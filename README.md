@@ -8,7 +8,7 @@
 
 - 夏吕俊/男/1991
 - 本科/软件工程/武汉理工大学
-- 工作年限：8年
+- 工作年限：10年
 - 技术博客：[http://xialvjun.github.io](http://xialvjun.github.io)
 - Github: [http://github.com/xialvjun](http://github.com/xialvjun)
 - 现居住城市：北京
@@ -77,16 +77,12 @@ vue2 编写 to b 业务，主要增删改查、地图、图表、直播（播放
 
 ### 主要技能
 
-- React : 精通
+- React/Vue : 精通
 - Node : express/koa/graphql 熟练
-- python : 上手
-- Java : 熟悉，但已经很久很久没用了
-- Go : 还不熟练，但是很清楚它的异步模型
-- Rust : 了解，也想学想用
 
 ### 其他技能
 
-webpack、babel、stylus、gulp、mysql、mongodb、git、bootstrap
+mysql、mongodb、git、bootstrap、go、rust
 
 ### 推行的技术栈
 
