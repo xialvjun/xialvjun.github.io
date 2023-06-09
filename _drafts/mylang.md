@@ -1738,3 +1738,52 @@ let n = println!(); // n 是一个 Result，这个 n 如果不做处理，就会
 
 但是好像 panic 留着更好。有些东西确实会出错，但是为了开发体验，真的就是忽略。 i32 + i32 可能会超出 i32 范围，为此还要 (i32 + i32)? 也太麻烦了，这个时候就直接 panic 好了
 或者不留 panic, 这些非常简单的算术 默认溢出会导致一个确定的值（本身已经失去了业务意义）。如果想要运行时检测，则用特殊方法。至于运算符重载，也是不允许返回 Result 的，不然有的重载不返回 Result，有的返回 Result，不一致。可以有自己的有名字的函数去实现 运算符功能，并返回 Result
+
+
+# koka's type and rust's pub
+```koka
+type person = {
+  name: string;
+}
+// is in fact
+type person = {
+  person: {
+    name: string;
+  }
+}
+// koka has enum
+type person = {
+  person: {
+    name: string;
+  };
+  bird: {
+    xxx: yyy;
+  };
+}
+```
+
+```rust
+// rust has pub
+struct A {
+  pub name: string;
+  age: number;
+}
+enum B {
+  ba;
+  bb;
+}
+// and
+enum Bx {
+  ba(string);
+  bb(number);
+}
+// rust: struct field is default private, enum option is (default/maybe_must) private
+```
+
+```
+// so merge koka and rust
+type Bx = {
+  ba(pub string);
+  bb(number);
+}
+```
