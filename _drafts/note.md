@@ -3948,3 +3948,97 @@ const abc = { fn a(){}; { a } }
 例如 母语英语，学习中文：下飞机，导游来接他，对他说“speak with me, everytime you want people to repeat their sentence, say pardon, to translate, say translate to me，now, 你好”，"translate", "hello, you can reply 你好". 算了，具体怎么做场景具体再说吧
 然后沉浸式其实也并不一定要 vr，完全也可以带着耳机看手机，手机里始终有场景环境里远处其他人交谈的声音。
 这种东西甚至可以用 galgame 引擎来制作，甚至更简单的，直接做成一个网站，这样还是云档案了。
+
+
+# el-scrollbar 有个蛮不错的 scrollbar 实现
+它的原理是 margin-right/bottom: -17px (17px 是 windows 系统的滚动条的宽度) 来把滚动条放到外面，外层再用 overflow: hidden 把滚动条隐藏起来。内部用 js 和 滚动事件 加上自定义的 dom 来画 浮空滚动条。
+但是它使用时经常出现问题，因为有 margin collapsing ，与 padding/border/block formatting context 等等东西有关，而且 横向margin 与 纵向margin 还有不同。
+可以稍微修改下实现，是 设置 height/width: calc(100% + 17px) 加上 overflow: scroll（确保滚动条出现，并占据空间），外层再用 overflow: hidden 把滚动条隐藏起来即可。
+不过怀疑这种实现方式对于 mac 这种自带浮空滚动条的系统，可能会有问题，可以先全局 在  position: fixed;top:-999px;left:-999px 的位置画个滚动元素， js 判断高度后，来检测系统滚动条的宽度，如果宽度为 0，就是浮空滚动条，于是自己就什么都不做了
+
+
+# rust 迭代器
+https://google.github.io/comprehensive-rust/exercises/day-1/book-library.html
+https://google.github.io/comprehensive-rust/exercises/day-1/iterators-and-ownership.html
+https://juejin.cn/post/7205508171523817532
+Vec<i8> 有 iter()/into_iter()/iter_mut() 方法。这三个方法都是来自于 Vec<i8> implement IntoIterator 
+而并非 iter() 来自于 Iterator, into_iter() 来自于 IntoIterator
+iter/into_iter/iter_mut 这三个方法都是用数据来生成迭代器，无非是权限不同而已。
+然后，上面的 book-library 链接中，为什么 `self.books.len()` 可以不加 `&`(也可以加)，而 `for book in self.books` 一定要写成 `for book in &self.books`，是因为
+for 其实是语法糖，始终调用 into_iter() 来生成迭代器（不清楚本身是迭代器会不会继续生成一个，不过就算继续生成，编译期应该也优化没了），然后无非是 `impl IntoIterator for &Vec<T>` 和 `impl IntoIterator for Vec<T>` 的区别而已
+而 `self.books.len()` 可以则是因为 Vec.len 参数就是对自己的不变借用 &self 
+
+
+# rest2graphql rust version
+JS 版本的 [rest2graphql](https://www.npmjs.com/package/rest2graphql) 大概率性能不行，就算行，人们潜意识也会认为不行，不好推广。
+而且依赖 node，不是单二进制文件，人们使用也不方便。
+做个 rust 版本的应该会好很多。
+rest2graphql --schema schema.graphql --envs envs.conf -e A=nihao
+rest2graphql -s schema.graphql [--envs .env] -e ABC=abc 
+schema.graphql 里 field 的注释里有 http 请求模板，里面可以使用 args,envs,headers
+
+```r2g/rest2graphql
+post {envs.host}/api/my_info/{args.id}?a={args.a}
+-h authorization={headers.authorization}
+-d {"id":"{args.id}"} // 如果 form 提交，有文件，则 -f name=1 -f file={args.file}
+-r {res.data}
+-e {res.error}
+```
+不，还是用 [hurl](https://github.com/Orange-OpenSource/hurl/blob/master/packages/hurl/src/main.rs#sending-multipart-form-data) 的语法吧
+而且 hurl 自带 template 功能 。 或者 https://github.com/bayne/dot-http
+
+-e 参数是临时覆盖 envs 里的值
+还可以加统计功能(--report db.sqlite), 优雅切换和关闭(-d 服务器启动后进入后台, reload 找到后台的进程, 暂停处理请求, 等所有请求结束, 让它重新读取配置文件, 再继续处理请求, stop 找到后台进程, 暂停处理请求, 等所有请求结束, 关闭进程, 以及不优雅处理 reload/stop -f)
+--play: playground
+--graphiql: graphiql
+或者不要命令行参数, 所有的配置都放在配置文件里
+
+实现：
+用 [graphql-parser](https://github.com/graphql-rust/graphql-parser) 加上 [async-graphql](https://github.com/async-graphql/async-graphql) 的 dynamic-schema, 来实现
+
+或者 deno 来实现也行
+
+
+# html 的 video + source 标签不会自动切换
+chrome@101 `<video><source src=""></video>` 不会因为 source 的 src 变更，就变更 video 。所以，简单起见，还是不要用 source 了
+
+# 后台管理系统-字典管理
+许多其他的后台系统字典管理都支持新增种类，但其实字典种类应该是由代码决定的，每改变种类都会涉及到代码的修改与发版，所以不该有新增字典，这里部标做的是正确的。但是，部标的字典不是树形显示逻辑，字典项的新增都不方便(可以参看组织管理)。再有，字典本质是一种配置信息，配置应该是由配置数据去适配代码，而非代码去适配配置数据，当前系统代码中有不少“某某字段值等于xx时，采用yy逻辑”，这极大的增加了代码复杂度和不稳定性，可以给所有字典项增加一个字段，存储动态的 key-value 对象（直接编写 json），因为字典种类是代码固定的，不可新增，所以可以在不同的字典下面的字典项的编辑表单里加上说明，真是不同的字典有不同的编辑表单，只是公用（字典编码、字典名称、字典项编码、字典项名称）这四个字段。字典项可以支持拖拽来改变顺序（如果要拖拽的话，可能就不适合用组织管理的那种表格的树形显示了，需要调研）。提供导出和覆盖导入JSON的功能，方便把测试完毕的测试环境配置转移到生产环境
+
+字典的种类是固定写死在代码里的，即字典管理页面中查询字典种类的下拉列表是写死的。某一种字典的里面的字典项是动态的，可以随便加。所有种类的字典的字典项都有统一的 value,label 字段，另外不同种类的字典的字典项，还可以有不同的其他的字段（不同种类的字典项编辑表单可以不同），避免在代码里写“某实体的某字段值等于xx时，采用yy逻辑”，这些其他字段可以有各种类型格式数据，甚至可以关联其他种类字典
+
+准确说，其实这种字典就是小的数据表。字典管理里有：XA种类（A1，A2，A3），XB种类（B1，B2），其实就是把 “XA管理” 与 “XB管理” 合并到一块儿去了。XA管理里有不同于 XB 的字段，就是放到上面说的那个 动态字段 里
+
+# 后台管理系统-菜单管理与角色权限
+2.2. 菜单管理：移除系统名称字段，确定类型为菜单的功能标识就是 url 路径，直接在操作列增加子功能，拖拽改变顺序和层级（拖拽需要调研），类型分为“菜单组、功能菜单、按钮”，新增菜单/菜单组时增加 icon 选择（需要设计提供正方形 icon），提供导出和覆盖导入JSON的功能，方便把测试完毕的测试环境配置转移到生产环境
+2.3. 角色权限管理：现今的角色权限逻辑里，要勾选一个菜单权限，则必须勾选至少一个子按钮权限，但事实上可能会有“仅提供查询权限”的功能，此时页面的表现逻辑是有问题的。菜单，或者说功能权限，虽然它们看起来是有父子关系，但实际逻辑其实是没有父子关系的，相应前端操作应该移除功能菜单与按钮的父子选择逻辑，但保留菜单组与功能菜单的父子选择逻辑
+
+菜单管理里数据分三种：菜单组[->菜单组(递归)]->菜单->按钮，所以菜单的数据是树形结构。角色权限只是一个以为数组，没有所属关系，即使在给角色分配权限时，使用菜单树形数据去展示和操作时，勾选菜单也不应该自动勾选按钮，因为完全可能只分配某个角色“只读”权限，如果每个“菜单”下面都要有个“查询”按钮，那用户分配权限时，分了“编辑”，没分“查询”，那就有问题了，其实就是“只勾选菜单，不勾选菜单下面的按钮”，那就是得到那个页面的最小权限，要允许他只分配最小权限（如果树的勾选逻辑中父子有关联，至少一个子勾选，父才是勾选或半勾选状态，那就没法分配最小权限了）
+
+菜单的树形数据会被用来显示页面左侧菜单，因为要关联路由和菜单，所以排除菜单组和按钮后，所有的菜单的 id 不应重复（除非分配角色权限时加冲突设定，这就太复杂了）。这样，树形菜单数据，经过权限过滤后，菜单在树上的相对位置是不会发生变化的，没法让不同的角色看到的菜单完全不同（虽然前端可以自主的根据某个规则来改变菜单位置，例如一个菜单组下面只剩下一个菜单了，则把菜单上提）
+
+
+1. 菜单的 icon 怎么来
+2. 菜单的位置和名字是固定的吗？不能菜单管理里移动和更改？
+
+如果菜单可以自主移动的话，那 “菜单组-菜单-按钮”，菜单在菜单组间移动，不同的菜单不能指向同一个路由（否则左侧 sidebar 不知道展开哪个），同样不好处理 “包装功能作为产品售卖” 的需求。总不能每个用户都有一份自己的菜单，那太复杂了。所以干脆 菜单是固定的
+
+
+1. 菜单管理：（避免前端硬编码）
+	1. 加个菜单组类型（菜单组不需要菜单标识），菜单组下面没有按钮。菜单下面全都是按钮
+	2. 取消系统名称字段
+	3. 加个 icon 字段
+	4. 菜单的 order 按照 update-time 去排序吧，这样至少有个手段去排序的
+2. 角色管理-支持 菜单与按钮 之间无关 。。 菜单组与菜单之间有关
+3. 字典管理-增加一个 extra 字段（json）
+
+
+做系统的麻烦之处：
+例如菜单的排序，许多系统是增加一个 order: number 字段，但前端界面却没有限制 order 不可相同。这就不是正确的数据结构（代数类型）。整个的数据流向就是： UI（错误的UI操作界面设计）-> 可能错误的数据 -> 想要把他转成正确的数据以及数据结构（这里就有很麻烦的选择困难症，或者增加了大量的代码，例如提交前要做大量判断，如果是正确的数据解构，都不需要做这些判断）
+
+`也许最正确的做法是-菜单数据硬编码`
+
+菜单信息应该硬编码，而不是弄个 “菜单管理” 的页面
+菜单 + 路由 + 角色权限
+角色权限是配置的；路由无论是硬编码，还是从文件路径生成，本质都是硬编码；菜单需要跟路由匹配起来，所以也是硬编码，非要变成“菜单管理”页面，最多也只能是改个中文名，调整下菜单的顺序和位置罢了
+而菜单的中文名、顺序和位置，它就算可以调整，整个系统也只能有一份，而不能是不同的角色有不同的配置，所以还不如硬编码。要不同的系统有不同的配置，就在编译参数上，或运行环境上做手脚。

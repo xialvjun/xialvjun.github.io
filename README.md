@@ -17,6 +17,8 @@
 
 ## 开源项目
 
+- [senia](https://github.com/xialvjun/eternal-senia) : 一个极小，无依赖，类 vue 的 UI 库。
+- [rest2graphql](https://github.com/xialvjun/rest2graphql) : 一个代理 rest api 并将其转化为 graphql api 的工具。
 - [mobx-loading](https://github.com/xialvjun/mobx-loading) : 类型安全地为 mobx 的 action 添加 loading 状态。
 - [farrow-apollo-server](https://github.com/xialvjun/apollo-server-farrow) : 一个不错的后端框架 farrow 的 apollo graphql 适配。
 - [ts-sql-plugin](https://github.com/xialvjun/ts-sql-plugin) : 在服务端 TypeScript 代码中用模板字符串直写 sql 语句, 通过获取代码语法树和变量类型, 组装出假的 sql 语句, 在真实数据库中 explain 来校验正确性。提供 LanguageServicePlugin 和 CLI 程序的用法。链接：[https://github.com/xialvjun/ts-sql-plugin](https://github.com/xialvjun/ts-sql-plugin)。不再推荐，推荐使用 `ts-sql-query / @ff00ff/mammoth / pgtyped`。
