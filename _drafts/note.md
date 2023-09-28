@@ -3494,6 +3494,14 @@ https://www.joshwcomeau.com/css/interactive-guide-to-flexbox/
 
 https://www.zhihu.com/question/41014727/answer/2804040764
 
+
+假如需要使用 rem 布局，对设计稿缩小，例如 1920 的设计稿，在 1280 屏幕上显示，用户又不能接受完全的流式布局（显示的内容太少了），强行 rem 布局，此时需要注：
+页面内字体大小用 px，某些行高、按钮等受字体影响的长度也用 px 。其他不怎么受字体影响的用 rem
+或者是会受到字体大小影响的长度，且小于 18px (因为 12/18==1280/1920) 的，如 margin-left: 16px, 就写成 margin-left: max(0.16rem, 12px) 
+本想写成 em 为单位，但实际上 em 不是真正的字体大小，它可能小于 12px，尽管最终渲染时字体大小又是 12px。。。
+也许可以把受字体大小影响的相关元素的字体大小都设置成 font-size: max(XXrem, 12px) ，于是其他单位就可以写 em 了
+
+
 # 样式
 一个系统的样式应该分为 工具样式 与 结构样式，所以可以分为两个 less 文件。这两个都是全局样式，应以 特定字符 gb(global) 开头
 工具样式 - 或许不该叫工具样式，而该叫组件样式
@@ -3996,7 +4004,46 @@ post {envs.host}/api/my_info/{args.id}?a={args.a}
 实现：
 用 [graphql-parser](https://github.com/graphql-rust/graphql-parser) 加上 [async-graphql](https://github.com/async-graphql/async-graphql) 的 dynamic-schema, 来实现
 
+rhai
+
 或者 deno 来实现也行
+
+或者 rust 执行配置文件里的复杂逻辑，需要 lua/js，要求提供两段代码，一段 request，一段 response，避免把 http 请求放在 vm 里执行。
+不过这样可能不如只使用简单的配置逻辑，不依赖 解释型编程语言，避免需要对数据做多次序列反序列化
+
+响应有三种 body - json/txt/bin
+请求有 body - json/txt/form
+
+#### async-graphql-xxx 不行
+async-graphql 不会对 revolve_fn 的返回值 再做验证， dynamic_schema 如果返回值类型与 schema 定义的输出类型不同，也能正常编译和运行， 与 graphql 本身是不同的
+```rust
+let query = Object::new("Query").field(Field::new(
+  "howdy",
+  TypeRef::named_nn(TypeRef::STRING),
+  |_| FieldFuture::new(async { Ok(Some(Value::from(123))) }), // 既然上面是 TypeRef::STRING , 这里应该不能返回 123 ，但这代码可以编译，甚至还可以运行
+));
+```
+
+可以考虑下 apollo-rs ， 或者其他语言的实现
+
+```graphql
+type User {
+  id: ID!
+  name: String!
+  age: Int!
+}
+
+type Query {
+  # rhai 不支持 tuple，虽然支持对象，语法是 #{a: 1, b: 2} , 但还是用 数组代替 tuple 吧 。。。 script 里加上处理数据的方法和 附加 method 标识的方法
+  # 因为 http 请求由 method + url(里面可能有query) + body 组成，最后再加个 res 处理回调
+  # ```rhai
+  # post(`${env.base}/user/${arg.id}`, [], json(arg), |res| { [res.error, res.data] })
+  # post(`${env.base}/user/${arg.id}`, [['cookie', req.cookie], ], form(arg), |res| { [res.error, res.data] })
+  # ```
+  user(id: ID!): User!
+  hello(name: String!):  String!
+}
+```
 
 
 # html 的 video + source 标签不会自动切换
@@ -4042,3 +4089,156 @@ chrome@101 `<video><source src=""></video>` 不会因为 source 的 src 变更�
 菜单 + 路由 + 角色权限
 角色权限是配置的；路由无论是硬编码，还是从文件路径生成，本质都是硬编码；菜单需要跟路由匹配起来，所以也是硬编码，非要变成“菜单管理”页面，最多也只能是改个中文名，调整下菜单的顺序和位置罢了
 而菜单的中文名、顺序和位置，它就算可以调整，整个系统也只能有一份，而不能是不同的角色有不同的配置，所以还不如硬编码。要不同的系统有不同的配置，就在编译参数上，或运行环境上做手脚。
+
+
+# 基于事件的状态处理，比基于状态的状态处理要好
+例如：一个表单，刚打开表单时，先做一个接口调用来填充数据，之后表单里有级联字段，A->B->C，改动 A 后，应该置空 B，但是填充 A 并不应该算改动 A 
+```tsx
+function MyCom({ init_id }) {
+  const form = ref({});
+  api_fill_form(init_id).then(res => {
+    form.value = res;
+  });
+  const useapi_fill_form_B_options = useApi(api_fill_form_B_options);
+  const B_opts = computed(() => useapi_fill_form_B_options.value.res || []);
+  watch(() => form.value.A, cv => {
+    form.value.B = '';
+    useapi_fill_form_B_options.fn(cv);
+  });
+  return () => <form>
+    <input v-model="form.A"></input>
+    <select v-model="form.B">
+      <option v-for="it in B_opts">{it}</option>
+    </select>
+  </form>
+}
+```
+上面的组件是有问题的，假如填充的数据里，A 和 B 是有值的，则 B 会被清空掉。如果有个 C 又依赖 B，则 C 也会被清空掉，且它的 options 都会被清空掉。
+需要区分是数据填充改变的 A 还是用户操作改变的 A。虽然也很容易做到（本质就是依赖事件），何不总体都是依赖事件。
+如果不是依赖于数据，而是依赖于事件
+```tsx
+function MyCom({ init_id }) {
+  const form = ref({});
+  api_fill_form(init_id).then(res => {
+    form.value = res;
+    useapi_fill_form_B_options.fn(form.value.A);
+  });
+  const useapi_fill_form_B_options = useApi(api_fill_form_B_options);
+  const B_opts = computed(() => useapi_fill_form_B_options.value.res || []);
+  const on_change_A = () => {
+    form.value.B = '';
+    useapi_fill_form_B_options.fn(form.value.A);
+  };
+  return () => <form>
+    <input v-model="form.A" @change="on_change_A"></input>
+    <select v-model="form.B">
+      <option v-for="it in B_opts">{it}</option>
+    </select>
+  </form>
+}
+```
+不过可能有问题是“没有级联变更”，即再来个 C 字段依赖 B，则每处都要再加一遍，重复的逻辑可能会有点多。
+```tsx
+function MyCom({ init_id }) {
+  const form = ref({});
+  api_fill_form(init_id).then(res => {
+    form.value = res;
+    useapi_fill_form_B_options.fn(form.value.A);
+    useapi_fill_form_C_options.fn(form.value.B);
+  });
+  const useapi_fill_form_B_options = useApi(api_fill_form_B_options);
+  const B_opts = computed(() => useapi_fill_form_B_options.value.res || []);
+  const useapi_fill_form_C_options = useApi(api_fill_form_C_options);
+  const C_opts = computed(() => useapi_fill_form_C_options.value.res || []);
+  const on_change_A = () => {
+    form.value.B = '';
+    useapi_fill_form_B_options.fn(form.value.A);
+    // form.value.C = '';
+    // useapi_fill_form_C_options.fn(form.value.B);
+    // 就算尽量精简，好像也精简不了多少
+    on_change_B();
+  };
+  const on_change_B = () => {
+    form.value.C = '';
+    useapi_fill_form_C_options.fn(form.value.B);
+  };
+  return () => <form>
+    <input v-model="form.A" @change="on_change_A"></input>
+    <select v-model="form.B" @change="on_change_B">
+      <option v-for="it in B_opts">{it}</option>
+    </select>
+    <select v-model="form.C">
+      <option v-for="it in C_opts">{it}</option>
+    </select>
+  </form>
+}
+```
+
+
+# Dataloader.vue
+```vue
+<template>
+  <component :is="as"><slot :loading="loading" :res="res"></slot></component>
+</template>
+
+<script lang="ts">
+import { computed, watch, PropType } from 'vue';
+import Dataloader from 'dataloader';
+import { useApi } from '@/refs';
+
+export default {
+  props: {
+    as: {
+      type: String,
+      default: 'span',
+    },
+    dataloader: {
+      type: Object as PropType<Dataloader<PropertyKey, any>>,
+      required: true,
+    },
+    id: {
+      type: String,
+      required: true,
+    },
+  },
+  setup(props, ctx) {
+    const api_load = useApi(() => props.dataloader.load(props.id));
+    const loading = computed(() => api_load.value.loading);
+    const res = computed(() => api_load.value.res);
+    watch(
+      [() => props.dataloader, () => props.id],
+      () => {
+        api_load.value = { ...api_load.value, res: null };
+        api_load.fn();
+      },
+      { immediate: true }
+    );
+    return { loading, res };
+  },
+};
+</script>
+```
+
+
+# 会议提效
+*  1.  您每周开会的频率是?  
+(单选题)  平均每周3次以下  平均每周3~6次  平均每周7~9次  平均每周10次以上          
+*  2.  您平均每次开会持续的时间是?  
+(单选题)  1小时以内  1~2小时  2~3小时  3小时以上           
+*  3.  您日常都参与哪种类型的会议？
+(多选题)  工作例会  内部沟通讨论会  跨部门协作会  专题会  其他
+*  4.  您觉得日常参加的会议是否高效，请打分?  
+(分数题)  十分低效  非常高效      
+*  5.  参会前，是否知道会议主题，明确自己的角色？  
+(单选题)  知道  不知道  有的时候知道，有时候不知道  其他
+*  6.  会议中，讨论内容是否符合主题，会议是否达成决议？  
+(单选题)  符合主题，达成决议  符合主题，但不能达成决议  偶尔跑题，但最终达成决议  不符合主题，没有决议  其他
+*  7.  会议后，是否存在无会议纪要、无会后跟进的情况？  
+(单选题)  是，经常发生  偶尔出现此情况  否，均有会议纪要及会后跟进           
+*  8.  您认为，会议效率不高的主要原因有哪些?
+(多选题)  会议时间冗长  会议议题安排不明确  邀请参会人员范围不合理  会议议程安排不合理  临时通知  会议召集方/参会人员针对会议内容准备不足  会议跑题，由于讨论过于发散而偏离主题  参会人员观点表达不清晰，缺乏主持人有有效引导  议而不决，不能形成会议结论  会议纪律有问题。如参会人员迟到、人在会场但忙于会议之外的事情、会议经常被各种（电话、其他事务）打断等。  会议结论没有跟踪或跟踪不能形成闭环，最后没有结果。  其他
+*  9.  您认为，提高会议效率最有效的行为是什么？
+(多选题)  开门见山，直奔主题，提前明确会议主题和目标  必须准时，对未请假且迟到或未到的与会者给予小惩罚  限定参会人角色：决策人，信息提供人，会议记录人等，否则不必参加  主持人及参会人必须提前准备  领导和干系人都要参加，不可授权给无法决策的人  使用计时器，高度专注，严格控制时间，原则上不超过1小时  充分交流，协作共赢，形成决议  清晰明确的决议一旦得出，必须严格执行  其他
+*  10.  您对提升会议效率有什么建议？
+(填空题)  
+
