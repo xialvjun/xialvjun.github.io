@@ -4278,3 +4278,15 @@ yggdrasil 初次连接不能直接发消息内容，其实 quic 也一样，必�
 https://github.com/yggdrasil-network/yggdrasil-go/issues/1060
 这个，其实并不需要中间节点充当 stun 服务器。首先是所有节点默认充当了 turn 服务器，至于 stun 服务器，它只是告诉通信双方各自的真实 IP，此时在通信双方已经可以互相沟通时，stun服务器就没必要了，通信双方本身应该有能力知道自己公网ip是多少（应该吧），还有多层 NAT 的问题
 
+
+# 前后端交互 与 redux action+reducer 的思考
+https://news.ycombinator.com/item?id=38494037
+上面的链接是 https://news.ycombinator.com/item?id=38489307 的一个评论。
+它的主旨是更多地给前端赋能，不需要那些后端接口工具 REST, GraphQL, *RPC, etc 
+其实类似的也有前端的 redux
+redux 的 store 本质是一个存储有状态的 event-emitter ，或者说是带有 listener 的状态。
+而它的 reducer 其实就相当于后端提供的接口，或者说 java spring 社区的 controller 的概念
+先不考虑安全逻辑，也不考虑分层解耦（事实上有许多所谓的分层解耦是一些历史遗留，例如说 html/js/css分层，但有了 react，有了基于组件的开发，三者已经融合了，成了高内聚）：
+如果前端能直接发送 sql 给数据库，那与其说 后端接口 是给前端提供功能，不如说是限制前端功能；
+如果前端 view 代码能直接操纵 redux store 的状态，那与其说 redux reducer 是给 view 代码提供功能，不如说也是在限制 view 代码。
+当然，现在现实是 view 代码的确能直接操纵 store 状态。
