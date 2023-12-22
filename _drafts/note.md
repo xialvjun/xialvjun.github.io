@@ -4290,3 +4290,486 @@ redux 的 store 本质是一个存储有状态的 event-emitter ，或者说是�
 如果前端能直接发送 sql 给数据库，那与其说 后端接口 是给前端提供功能，不如说是限制前端功能；
 如果前端 view 代码能直接操纵 redux store 的状态，那与其说 redux reducer 是给 view 代码提供功能，不如说也是在限制 view 代码。
 当然，现在现实是 view 代码的确能直接操纵 store 状态。
+
+
+
+
+# useAsyncComputed 
+```tsx
+export function useAsyncComputed1<F extends () => () => PromiseLike<any>>(fn: F) {
+  let _args = {};
+  type P = ReturnType<ReturnType<F>>;
+  const state = {
+    loading: false,
+    error: null,
+    res: undefined as Awaited<P>,
+    p: null as P,
+  };
+  const sr = shallowRef({ state });
+  let is_self_update = false;
+  return computed(() => {
+    const args = (_args = {});
+    const async_fn = fn();
+    if (!is_self_update) {
+      const p = async_fn().then(
+        res => {
+          if (_args !== args) return new Promise(_ => _);
+          is_self_update = true;
+          Object.assign(state, { loading: false, res });
+          sr.value = { state };
+          return res;
+        },
+        error => {
+          if (_args !== args) return new Promise(_ => _);
+          is_self_update = true;
+          Object.assign(state, { loading: false, error });
+          sr.value = { state };
+          throw error;
+        }
+      );
+      Object.assign(state, { p, loading: true, error: null });
+    }
+    is_self_update = false;
+    return sr.value.state;
+  });
+}
+
+export function useAsyncComputed<F extends () => PromiseLike<any>>(fn: F, deps: () => any) {
+  let _args = {};
+  const state = {
+    loading: false,
+    error: null,
+    res: undefined as Awaited<ReturnType<F>>,
+    p: null as ReturnType<F>,
+  };
+  const sr = shallowRef({ state });
+  let is_self_update = false;
+  return computed(() => {
+    const args = (_args = {});
+    // deps 不得为空，因为 is_self_update=true 时进入，不会触发 fn 导致收集不到依赖
+    deps();
+    if (!is_self_update) {
+      const p = fn().then(
+        res => {
+          if (_args !== args) return new Promise(_ => _);
+          is_self_update = true;
+          Object.assign(state, { loading: false, res });
+          sr.value = { state };
+          return res;
+        },
+        error => {
+          if (_args !== args) return new Promise(_ => _);
+          is_self_update = true;
+          Object.assign(state, { loading: false, error });
+          sr.value = { state };
+          throw error;
+        }
+      );
+      Object.assign(state, { p, loading: true, error: null });
+    }
+    is_self_update = false;
+    return sr.value.state;
+  });
+}
+
+
+
+
+export function useAsyncComputed<F extends () => () => PromiseLike<any>>(fn: F) {
+  type P = ReturnType<ReturnType<F>>;
+  const state = {
+    loading: false,
+    error: null,
+    res: undefined as Awaited<P>,
+    p: null as P,
+  };
+  const sr = shallowRef({ state });
+
+  const async_fn = computed(() => fn());
+  let bfn = null as any;
+  return computed(() => {
+    const afn = async_fn.value;
+    if (afn !== bfn) {
+      const p = afn().then(
+        res => {
+          if (afn !== bfn) return new Promise(_ => _);
+          Object.assign(state, { loading: false, res });
+          sr.value = { state };
+          return res;
+        },
+        error => {
+          if (afn !== bfn) return new Promise(_ => _);
+          Object.assign(state, { loading: false, error });
+          sr.value = { state };
+          throw error;
+        }
+      );
+      Object.assign(state, { p, loading: true, error: null });
+    }
+    bfn = afn;
+    return sr.value.state;
+  });
+}
+
+
+export function useAsyncComputed2<F extends () => () => PromiseLike<any>>(fn: F) {
+  type P = ReturnType<ReturnType<F>>;
+  const state = {
+    loading: false,
+    error: null,
+    res: undefined as Awaited<P>,
+    p: null as P,
+  };
+  const sr = shallowRef({ state });
+
+  const async_fn = computed(() => fn());
+  let bfn = null as any;
+  return computed(() => {
+    const afn = async_fn.value;
+    const cfn = bfn;
+    bfn = afn;
+    if (bfn !== cfn) {
+      const p = afn().then(
+        res => {
+          if (afn !== bfn) return new Promise(_ => _);
+          Object.assign(state, { loading: false, res });
+          sr.value = { state };
+          return res;
+        },
+        error => {
+          if (afn !== bfn) return new Promise(_ => _);
+          Object.assign(state, { loading: false, error });
+          sr.value = { state };
+          throw error;
+        }
+      );
+      Object.assign(state, { p, loading: true, error: null });
+    }
+    return sr.value.state;
+  });
+}
+
+
+export function useAsyncComputed1<F extends () => () => PromiseLike<any>>(fn: F) {
+  let _args = {};
+  type P = ReturnType<ReturnType<F>>;
+  const state = {
+    loading: false,
+    error: null,
+    res: undefined as Awaited<P>,
+    p: null as P,
+  };
+  const sr = shallowRef({ state });
+  let is_self_update = false;
+  return computed(() => {
+    const args = (_args = {});
+    const async_fn = fn();
+    console.log('is_self_update', is_self_update);
+    if (!is_self_update) {
+      // 需要有个 macro 任务，否则可能会有 computed 合并计算，如 fn() 收集的依赖连续变两次，但 fn 只运行了一次
+      // 如 async_fn 仅有一个微任务，则它结束后，设置 is_self_update=true
+      // 还没有重新计算，外界又来了次变化，这个 computed 再次执行，即 fn() 再次执行，于是错失了这次的 async_fn()，导致 res 是旧的 res
+      // 其实也有 bug：在等待 async_fn() 期间，外界已经不依赖此 asyncComputed 了，于是会导致 is_self_update=true 后不自动变为 false
+      // 下一次再依赖这个 asyncComputed 时，即使 fn() 收集的依赖已经变了，它也不会执行 async_fn()
+      // 更正确的做法是换成上述 afn=async_fn();cfn=bfn;bfn=afn;
+      const macro_p = new Promise(res => setTimeout(res));
+      const p = macro_p
+        .then(_ => async_fn())
+        .then(
+          res => {
+            if (_args !== args) return new Promise(_ => _);
+            is_self_update = true;
+            Object.assign(state, { loading: false, res });
+            sr.value = { state };
+            return res;
+          },
+          error => {
+            if (_args !== args) return new Promise(_ => _);
+            is_self_update = true;
+            Object.assign(state, { loading: false, error });
+            sr.value = { state };
+            throw error;
+          }
+        );
+      Object.assign(state, { p, loading: true, error: null });
+    }
+    is_self_update = false;
+    return sr.value.state;
+  });
+}
+```
+
+
+
+# svg drop shadow test
+```html
+<svg viewBox="0 0 100 100">
+  <defs>    
+    <path id="a" d="M10,10 l40,20 l40,-20 v80 h-80 z" />
+    <filter id="b">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
+    </filter>
+    <use id="c" href="#a" fill="transparent" stroke="red" filter="url(#b)" >
+  </defs>
+  <clipPath id="d">
+    <use href="#a" />
+  </clipPath>
+  <!-- <use clip-path="url(#d)" href="#a" fill="transparent" stroke="red" filter="url(#b)" /> -->
+  <!-- or -->
+  <use clip-path="url(#d)" href="#c" />
+</svg>
+```
+
+
+# useAsyncComputed test
+```vue
+<script lang="ts" setup>
+import { ref, shallowRef, watch, computed } from 'vue'
+
+function useAsyncComputed<F extends () => () => PromiseLike<any>>(fn: F) {
+  let _args = {};
+  type P = ReturnType<ReturnType<F>>;
+  const state = {
+    loading: false,
+    error: null,
+    res: undefined as Awaited<P>,
+    p: null as P,
+  };
+  const sr = shallowRef({ state });
+  let is_self_update = false;
+  return computed(() => {
+    const args = (_args = {});
+    const async_fn = fn();
+    if (!is_self_update) {
+      const p = async_fn().then(
+        res => {
+          if (_args !== args) return new Promise(_ => _);
+          is_self_update = true;
+          Object.assign(state, { loading: false, res });
+          sr.value = { state };
+          return res;
+        },
+        error => {
+          if (_args !== args) return new Promise(_ => _);
+          is_self_update = true;
+          Object.assign(state, { loading: false, error });
+          sr.value = { state };
+          throw error;
+        }
+      );
+      Object.assign(state, { p, loading: true, error: null });
+    }
+    is_self_update = false;
+    return sr.value.state;
+  });
+}
+
+async function getRan(v: any) {
+  return new Promise(res => {
+    setTimeout(() => {
+      res(v + Math.random());
+    }, 1000);
+  })
+};
+
+const a = ref('');
+const b = ref('');
+const c = useAsyncComputed(() => {
+  const av = a.value;
+  const bv = b.value;
+  return async () => {
+    const ar = await getRan(av);
+    const br = await getRan(bv);
+    return [ar, br].join('    ');
+  }
+});
+
+c.value.
+
+</script>
+
+<template>
+  <input v-model="a"/>
+  <input v-model="b"/>
+  <div>{{ c.loading ? 'loading'  : c.res}}</div>
+</template>
+
+<style>
+body {
+  background: #fff !important;
+}
+</style>
+```
+
+
+# SetupFn.ts
+```tsx
+import { defineComponent, PropType } from 'vue';
+
+// 同层级多个此组件时，记得带 key.
+// 例如: <Setup v-if="flag" :setup="">xxx</Setup><Setup v-else :setup="">xxx</Setup>
+// 上面的例子在 flag 切换时, Setup 不会切换, 需要带 key:
+// <Setup key="flag_true" v-if="flag" :setup="xxx">xxx</Setup><Setup key="flag_false" v-else :setup="yyy">yyy</Setup>
+export default defineComponent({
+  props: {
+    setup: {
+      type: Function as PropType<(props: any, ctx: any) => any>,
+      required: true,
+    },
+  },
+  setup(props, ctx) {
+    const all = props.setup(props, ctx);
+    // 直接用 js 写比用 .vue 文件写，可以少写一个 component: <component :is="is"><slot v-bind="all"/></component>, 从而让外部更灵活的控制组件根元素
+    // 除非说 .vue 文件里 template 里可以直接使用 this: <slot v-bind="this" />, 从而让外部的 slot 自动解了 ref.value, ~~可惜不行~~(好吧，确实可以)
+    // 而这种 js 写法不会自动解 ref.value, 在外部需要 xyz.value 来使用。另外 js 写法 setup 不一定非要返回 Object, 它返回是什么就是什么
+    return () => {
+      return ctx.slots.default?.(all);
+    };
+  },
+});
+
+
+// !!!!! !!!!! !!!!! !!!!! !!!!! !!!!! !!!!! !!!!! !!!!! 
+// !!!!! 下面这种的，slot 里面不能 scope.visible=!scope.visible 还不如写成 scope.visible=!scope.visible 呢
+// !!!!! !!!!! !!!!! !!!!! !!!!! !!!!! !!!!! !!!!! !!!!! !!!!! 
+
+// <script lang="ts">
+// import { defineComponent, PropType } from 'vue';
+// export default defineComponent({
+//   props: {
+//     component_is: {
+//       type: String,
+//       default: 'div',
+//     },
+//     setup: {
+//       type: Function as PropType<(props: any, ctx: any) => Object>,
+//       required: true,
+//     },
+//   },
+//   setup(props, ctx) {
+//     return props.setup(props, ctx);
+//     // const all = props.setup(props, ctx);
+//     // return { all };
+//   },
+// });
+// </script>
+
+// <template>
+//   <component :is="component_is">
+//     <slot v-bind="this"></slot>
+//     <!-- <slot v-bind="all"></slot> -->
+//   </component>
+// </template>
+
+```
+
+
+# MapPopupSvg.vue
+```vue
+<template>
+  <svg :width="width" :height="height" :viewBox="`0 0 ${width} ${height}`">
+    <defs>
+      <path id="p" :d="`M7,21 l14,-14 H${width_40} l14,14 H${width - 21} l14,14 V${height - 21} l-14,14 H21 l-14,-14 z`"></path>
+      <filter id="f">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
+        <!-- 本来只是尝试用下面这段代码，跟上面的 feGaussianBlur 应该是互斥的，但偶然使出来两者一块儿用就 ok 了，不明白为什么，暂时不花精力去搞明白 -->
+        <feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="5" />
+        <feGaussianBlur in="blur" result="blur2" stdDeviation="10" />
+        <feGaussianBlur in="blur2" result="blur3" stdDeviation="15" />
+        <feMerge>
+          <feMergeNode in="blur" mode="normal" />
+          <feMergeNode in="blur2" mode="normal" />
+          <feMergeNode in="blur3" mode="normal" />
+          <feMergeNode in="SourceGraphic" mode="normal" />
+        </feMerge>
+      </filter>
+    </defs>
+
+    <path d="M0,38 v-24 l14,-14 h19" fill="#0000" :stroke="color"></path>
+
+    <path :d="`M${width - 0},45 v-17 l-14,-14 h-21`" fill="#0000" :stroke="color"></path>
+
+    <path :d="`M${width - 0},${height - 36} v22 l-14,14 h-23`" fill="#0000" :stroke="color"></path>
+
+    <path :d="`M0,${height - 47} v33 l14,14 h27`" fill="#0000" :stroke="color"></path>
+
+    <!-- 提供 fill background -->
+    <use href='#p' fill='rgba(0,26,60,0.851)' clip-path='url(#cp)' />
+
+    <!-- 提供 inset shadow -->
+    <clipPath id="cp">
+      <use href="#p" />
+    </clipPath>
+    <use href="#p" fill="#0000" :stroke="color" filter="url(#f)" clip-path="url(#cp)" />
+  </svg>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+
+const props = defineProps({
+  width: {
+    type: Number,
+    required: true,
+  },
+  height: {
+    type: Number,
+    required: true,
+  },
+  color: {
+    type: String,
+    required: true,
+  },
+});
+
+const width_40 = computed(() => Math.round(props.width * 0.4));
+</script>
+
+<script lang="ts">
+// 上面的 vue 组件没法写到 css background 里，下面这种生成字符串形式更方便
+export function factory(width: number, height: number, color: string) {
+  width = Math.round(width);
+  height = Math.round(height);
+  const width_40 = Math.round(width * 0.4);
+  // 必须得带上 xmlns='http://www.w3.org/2000/svg' 不然作为 background data-uri ，chrome 不会显示图片
+  // 语法不能有错误，例如下面的 width='${width}' 不能写成 :width='${width}' ，不然 vue :style="{'--svg_data_uri': svg_data_uri}" vue放不上去
+  // 还有 data_uri 最好用 base64 `url("data:image/svg+xml;base64,${btoa(MapPopupSvgFactory(width, height, color))}")`
+  // 如果用 data:image/svg+xml;utf8,<svg></svg> 还需要对 <svg></svg> 部分转义，转义逻辑还比较繁杂，见 https://codepen.io/elliz/pen/ygvgay
+  // https://css-tricks.com/probably-dont-base64-svg/
+  // computed_svg_url = computed(() => `url("data:image/svg+xml;base64,${btoa(MapPopupSvgFactory(width, height, color))}")`)
+  return `
+<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'>
+  <defs>
+    <path id='p' d='M7,21 l14,-14 H${width_40} l14,14 H${width - 21} l14,14 V${height - 21} l-14,14 H21 l-14,-14 z'></path>
+    <filter id='f'>
+      <feGaussianBlur in='SourceGraphic' stdDeviation='2' />
+      <feGaussianBlur in='SourceGraphic' result='blur' stdDeviation='5' />
+      <feGaussianBlur in='blur' result='blur2' stdDeviation='10' />
+      <feGaussianBlur in='blur2' result='blur3' stdDeviation='15' />
+      <feMerge>
+        <feMergeNode in='blur' mode='normal' />
+        <feMergeNode in='blur2' mode='normal' />
+        <feMergeNode in='blur3' mode='normal' />
+        <feMergeNode in='SourceGraphic' mode='normal' />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <path d='M0,38 v-24 l14,-14 h19' fill='#0000' stroke='${color}'></path>
+
+  <path d='M${width - 0},45 v-17 l-14,-14 h-21' fill='#0000' stroke='${color}'></path>
+
+  <path d='M${width - 0},${height - 36} v22 l-14,14 h-23' fill='#0000' stroke='${color}'></path>
+
+  <path d='M0,${height - 47} v33 l14,14 h27' fill='#0000' stroke='${color}'></path>
+
+  <clipPath id='cp'>
+    <use href='#p' />
+  </clipPath>
+  <use href='#p' fill='rgba(0,26,60,0.851)' clip-path='url(#cp)' />
+  <use href='#p' fill='#0000' stroke='${color}' filter='url(#f)' clip-path='url(#cp)' />
+</svg>
+  `
+}
+</script>
+```
